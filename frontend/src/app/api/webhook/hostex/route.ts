@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { addWebhookEvent } from '@/lib/db';
+import { broadcast } from '@/lib/events';
 
 export async function POST(req: NextRequest) {
   const secret = process.env.HOSTEX_API_TOKEN;
@@ -31,7 +32,8 @@ export async function POST(req: NextRequest) {
     const conversationId =
       payload.conversation_id || payload.data?.conversation_id || payload.data?.conversationId;
     if (conversationId) {
-      await addWebhookEvent({ type, conversationId, payload });
+      const event = await addWebhookEvent({ type, conversationId, payload });
+      broadcast({ conversationId, message: event.payload?.data || event.payload });
     }
   }
 
