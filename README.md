@@ -22,6 +22,8 @@ This project integrates Hostex conversations with ChatGPT, offering a web-based 
 - `GET /api/conversations/:id/replies` – list stored ChatGPT replies for a conversation.
 - `POST /api/conversations/:id/replies` – generate a new reply using ChatGPT and store it.
 - `POST /api/conversations/:id/send` – send a stored reply via the Hostex API.
+- `POST /api/webhook/hostex` – receive Hostex webhook events verified with
+  `HOSTEX_API_TOKEN` and persist new message events in `db.json`.
 
 Generated replies can be edited before sending on the conversation detail page.
 
