@@ -29,7 +29,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
         if (data.error) {
           setError(data.error);
         } else {
-          setDetail(data);
+          setDetail(data.data ?? data);
         }
       })
       .catch((err) => setError(err.message));
