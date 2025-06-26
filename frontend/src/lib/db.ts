@@ -25,7 +25,9 @@ interface DB {
 
 const DB_PATH = path.join(process.cwd(), 'db.json');
 
-async function readDB(): Promise<DB> {
+let dbCache: DB | null = null;
+
+async function loadDB(): Promise<DB> {
   try {
     const data = await fs.readFile(DB_PATH, 'utf8');
     const parsed = JSON.parse(data) as Partial<DB>;
@@ -38,12 +40,19 @@ async function readDB(): Promise<DB> {
   }
 }
 
+async function getDB(): Promise<DB> {
+  if (!dbCache) {
+    dbCache = await loadDB();
+  }
+  return dbCache;
+}
+
 async function writeDB(db: DB) {
   await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2));
 }
 
 export async function addReply(reply: Omit<Reply, 'id' | 'createdAt'>): Promise<Reply> {
-  const db = await readDB();
+  const db = await getDB();
   const newReply: Reply = {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
@@ -55,14 +64,14 @@ export async function addReply(reply: Omit<Reply, 'id' | 'createdAt'>): Promise<
 }
 
 export async function listReplies(conversationId: string): Promise<Reply[]> {
-  const db = await readDB();
+  const db = await getDB();
   return db.replies.filter((r) => r.conversationId === conversationId);
 }
 
 export async function addWebhookEvent(
   event: Omit<WebhookEvent, 'id' | 'receivedAt'>
 ): Promise<WebhookEvent> {
-  const db = await readDB();
+  const db = await getDB();
   const newEvent: WebhookEvent = {
     id: crypto.randomUUID(),
     receivedAt: new Date().toISOString(),
@@ -76,7 +85,7 @@ export async function addWebhookEvent(
 export async function listWebhookEvents(
   conversationId?: string
 ): Promise<WebhookEvent[]> {
-  const db = await readDB();
+  const db = await getDB();
   return conversationId
     ? db.events.filter((e) => e.conversationId === conversationId)
     : db.events;
