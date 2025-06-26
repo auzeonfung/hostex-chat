@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface Conversation {
   id: string;
@@ -31,10 +32,13 @@ export default function Home() {
       {error && <p className="text-red-600">{error}</p>}
       <ul className="space-y-2">
         {conversations.map((conv) => (
-          <li key={conv.id} className="rounded border p-2">
-            <pre className="whitespace-pre-wrap text-sm">
-              {JSON.stringify(conv, null, 2)}
-            </pre>
+          <li key={conv.id} className="rounded border p-2 hover:bg-gray-50">
+            <Link href={`/conversations/${conv.id}`}
+              className="block">
+              <pre className="whitespace-pre-wrap text-sm">
+                {JSON.stringify(conv, null, 2)}
+              </pre>
+            </Link>
           </li>
         ))}
       </ul>

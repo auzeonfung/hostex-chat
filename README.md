@@ -1,6 +1,6 @@
 # Hostex Chat
 
-This project integrates Hostex conversations with ChatGPT, offering a web-based interface to view chats and send AI-assisted replies. The frontend lives in the `frontend/` directory and exposes several API routes for backend functionality.
+This project integrates Hostex conversations with ChatGPT, offering a web-based interface to view chats and send AI-assisted replies. The frontend lives in the `frontend/` directory and exposes several API routes for backend functionality. From the conversation list you can click a chat to view its full details.
 
 ## Getting Started
 
@@ -18,6 +18,7 @@ This project integrates Hostex conversations with ChatGPT, offering a web-based 
 ## API Routes
 
 - `GET /api/conversations` – fetches Hostex conversations from the last 7 days.
+- `GET /api/conversations/:id` – retrieves details for a specific conversation.
 - `GET /api/conversations/:id/replies` – list stored ChatGPT replies for a conversation.
 - `POST /api/conversations/:id/replies` – generate a new reply using ChatGPT and store it.
 - `POST /api/conversations/:id/send` – send a stored reply via the Hostex API.
