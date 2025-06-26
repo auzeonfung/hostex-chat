@@ -1,10 +1,6 @@
 # Hostex Chat
 
-<<<<<<< 7z9xox-codex/开发hostex与chatgpt对接工具
-This project integrates Hostex conversations with ChatGPT, offering a web-based interface to view chats and send AI-assisted replies. The frontend lives in the `frontend/` directory and exposes several API routes for backend functionality. From the conversation list you can click a chat to view its full details. On the detail page you can generate ChatGPT replies and send them back through Hostex.
-=======
-This project integrates Hostex conversations with ChatGPT, offering a web-based interface to view chats and send AI-assisted replies. The frontend lives in the `frontend/` directory and exposes several API routes for backend functionality. From the conversation list you can click a chat to view its full details. The detail page now lets you generate ChatGPT replies and send any stored reply back to Hostex.
->>>>>>> main
+This project integrates Hostex conversations with ChatGPT, offering a web-based interface to view chats and send AI-assisted replies. The frontend lives in the `frontend/` directory and exposes several API routes for backend functionality. From the conversation list you can click a chat to view its full details. On the detail page you can generate ChatGPT replies and send any stored reply back to Hostex.
 
 ## Getting Started
 
@@ -27,9 +23,6 @@ This project integrates Hostex conversations with ChatGPT, offering a web-based 
 - `POST /api/conversations/:id/replies` – generate a new reply using ChatGPT and store it.
 - `POST /api/conversations/:id/send` – send a stored reply via the Hostex API.
 
-<<<<<<< 7z9xox-codex/开发hostex与chatgpt对接工具
 Generated replies can be edited before sending on the conversation detail page.
 
-=======
->>>>>>> main
 Configure `HOSTEX_API_BASE` in the `.env` file if your Hostex endpoint differs from the default `https://api.hostex.io/v3`.
