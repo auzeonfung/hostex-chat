@@ -91,6 +91,24 @@ export default function ConversationPage({ params }: { params: { id: string } })
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [detail?.messages?.length]);
 
+  useEffect(() => {
+    const es = new EventSource('/api/events');
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        const id = data.conversationId || data.conversation_id;
+        if (id === params.id) {
+          fetchDetail();
+        }
+      } catch {
+        // ignore JSON parse errors
+      }
+    };
+    return () => {
+      es.close();
+    };
+  }, [params.id]);
+
   async function send() {
     if (!message.trim()) return;
     setSending(true);
