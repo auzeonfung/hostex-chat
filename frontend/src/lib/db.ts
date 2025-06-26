@@ -1,6 +1,9 @@
-import { promises as fs } from 'fs';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import path from 'path';
 import crypto from 'crypto';
+
+const exec = promisify(execFile);
 
 export interface Reply {
   id: string;
@@ -18,75 +21,95 @@ export interface WebhookEvent {
   receivedAt: string;
 }
 
-interface DB {
-  replies: Reply[];
-  events: WebhookEvent[];
-}
+const DB_PATH = path.join(process.cwd(), 'db.sqlite');
 
-const DB_PATH = path.join(process.cwd(), 'db.json');
-
-let dbCache: DB | null = null;
-
-async function loadDB(): Promise<DB> {
-  try {
-    const data = await fs.readFile(DB_PATH, 'utf8');
-    const parsed = JSON.parse(data) as Partial<DB>;
-    return {
-      replies: parsed.replies ?? [],
-      events: parsed.events ?? [],
-    };
-  } catch {
-    return { replies: [], events: [] };
+function log(...args: any[]) {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[db]', ...args);
   }
 }
 
-async function getDB(): Promise<DB> {
-  if (!dbCache) {
-    dbCache = await loadDB();
-  }
-  return dbCache;
+async function run(sql: string): Promise<any[]> {
+  log('execute', sql.trim());
+  const { stdout } = await exec('sqlite3', ['-json', DB_PATH, sql]);
+  const out = stdout.trim();
+  return out ? JSON.parse(out) : [];
 }
 
-async function writeDB(db: DB) {
-  await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2));
+async function init() {
+  await exec('sqlite3', [
+    DB_PATH,
+    `CREATE TABLE IF NOT EXISTS replies (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT,
+      text TEXT,
+      model TEXT,
+      created_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS webhook_events (
+      id TEXT PRIMARY KEY,
+      type TEXT,
+      conversation_id TEXT,
+      payload TEXT,
+      received_at TEXT
+    );`,
+  ]);
 }
 
-export async function addReply(reply: Omit<Reply, 'id' | 'createdAt'>): Promise<Reply> {
-  const db = await getDB();
-  const newReply: Reply = {
-    id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
-    ...reply,
-  };
-  db.replies.push(newReply);
-  await writeDB(db);
-  return newReply;
+init().catch((err) => console.error('DB init failed', err));
+
+function q(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
+export async function addReply(
+  reply: Omit<Reply, 'id' | 'createdAt'>
+): Promise<Reply> {
+  const id = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+  await run(
+    `INSERT INTO replies (id, conversation_id, text, model, created_at)
+     VALUES ('${id}', '${q(reply.conversationId)}', '${q(reply.text)}', '${q(
+      reply.model,
+    )}', '${createdAt}');`,
+  );
+  return { id, createdAt, ...reply };
 }
 
 export async function listReplies(conversationId: string): Promise<Reply[]> {
-  const db = await getDB();
-  return db.replies.filter((r) => r.conversationId === conversationId);
+  const rows = await run(
+    `SELECT id, conversation_id as conversationId, text, model, created_at as createdAt
+     FROM replies WHERE conversation_id='${q(conversationId)}' ORDER BY created_at`,
+  );
+  return rows as Reply[];
 }
 
 export async function addWebhookEvent(
-  event: Omit<WebhookEvent, 'id' | 'receivedAt'>
+  event: Omit<WebhookEvent, 'id' | 'receivedAt'>,
 ): Promise<WebhookEvent> {
-  const db = await getDB();
-  const newEvent: WebhookEvent = {
-    id: crypto.randomUUID(),
-    receivedAt: new Date().toISOString(),
-    ...event,
-  };
-  db.events.push(newEvent);
-  await writeDB(db);
-  return newEvent;
+  const id = crypto.randomUUID();
+  const receivedAt = new Date().toISOString();
+  await run(
+    `INSERT INTO webhook_events (id, type, conversation_id, payload, received_at)
+     VALUES ('${id}', '${q(event.type)}', '${q(event.conversationId)}', '${q(
+      JSON.stringify(event.payload),
+    )}', '${receivedAt}');`,
+  );
+  return { id, receivedAt, ...event };
 }
 
 export async function listWebhookEvents(
-  conversationId?: string
+  conversationId?: string,
 ): Promise<WebhookEvent[]> {
-  const db = await getDB();
-  return conversationId
-    ? db.events.filter((e) => e.conversationId === conversationId)
-    : db.events;
+  const where = conversationId
+    ? `WHERE conversation_id='${q(conversationId)}'`
+    : '';
+  const rows = await run(
+    `SELECT id, type, conversation_id as conversationId, payload, received_at as receivedAt
+     FROM webhook_events ${where} ORDER BY received_at`,
+  );
+  return rows.map((r: any) => ({
+    ...r,
+    payload: JSON.parse(r.payload),
+  }));
 }
