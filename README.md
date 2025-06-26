@@ -29,6 +29,36 @@ Generated replies can be edited before sending on the conversation detail page.
 
 Configure `HOSTEX_API_BASE` in the `.env` file if your Hostex endpoint differs from the default `https://api.hostex.io/v3`.
 
+## Example: Sending a Message
+
+Hostex expects new messages to be posted to the `/conversations/:id` endpoint
+with a JSON body containing a single `message` field. Below is a minimal
+example using `fetch`:
+
+```javascript
+const url = 'https://api.hostex.io/v3/conversations/YOUR_CONVERSATION_ID';
+const options = {
+  method: 'POST',
+  headers: {
+    accept: 'application/json',
+    'content-type': 'application/json',
+    // Replace with your token or read from an environment variable
+    'Hostex-Access-Token': process.env.HOSTEX_API_TOKEN,
+  },
+  body: JSON.stringify({
+    message: 'Hello from Hostex Chat!',
+  }),
+};
+
+fetch(url, options)
+  .then((res) => res.json())
+  .then((json) => console.log(json))
+  .catch((err) => console.error(err));
+```
+
+Ensure the `Hostex-Access-Token` header is set to a valid API token and that the
+conversation ID exists. Use the `message` field when posting new messages.
+
 ## Webhook Setup
 
 To keep conversations up to date you can configure a webhook in Hostex so that
