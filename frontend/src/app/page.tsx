@@ -52,7 +52,7 @@ export default function Home() {
         setError(data.error || "Failed to load");
         setDetail(null);
       } else {
-        setDetail(data);
+        setDetail(data.data ?? data);
       }
     } catch (err: any) {
       setError(err.message);
