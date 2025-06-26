@@ -28,3 +28,20 @@ This project integrates Hostex conversations with ChatGPT, offering a web-based 
 Generated replies can be edited before sending on the conversation detail page.
 
 Configure `HOSTEX_API_BASE` in the `.env` file if your Hostex endpoint differs from the default `https://api.hostex.io/v3`.
+
+## Webhook Setup
+
+To keep conversations up to date you can configure a webhook in Hostex so that
+new messages are pushed to this application. Create a webhook in your Hostex
+dashboard with the following settings:
+
+1. **URL** – the publicly accessible URL of `/api/webhook/hostex` (for local
+   development you can expose your dev server using a tool such as `ngrok`).
+2. **Secret** – set the secret/token to the same value as `HOSTEX_API_TOKEN` in
+   your `.env` file. Incoming requests must include a `hostex-signature` header
+   computed as an HMAC SHA‑256 of the request body using this secret.
+3. **Events** – subscribe to the `message.created` event to capture new incoming
+   messages.
+
+Webhook payloads are stored in `db.json` and broadcast to connected clients via
+Server‑Sent Events.
