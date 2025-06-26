@@ -1,150 +1,127 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
-interface Reply {
+interface Message {
   id: string;
-  text: string;
-  model: string;
-  createdAt: string;
+  sender_role?: string;
+  content: string;
+  created_at?: string;
 }
 
 interface ConversationDetail {
   id: string;
+  messages?: Message[];
   [key: string]: any;
 }
 
 export default function ConversationPage({ params }: { params: { id: string } }) {
   const [detail, setDetail] = useState<ConversationDetail | null>(null);
-  const [replies, setReplies] = useState<Reply[]>([]);
-  const [prompt, setPrompt] = useState<string>("Write a helpful reply.");
-  const [status, setStatus] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    fetch(`/api/conversations/${params.id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setError(data.error);
-        } else {
-          setDetail(data.data ?? data);
-        }
-      })
-      .catch((err) => setError(err.message));
-  }, [params.id]);
-
-  useEffect(() => {
-    fetch(`/api/conversations/${params.id}/replies`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setError(data.error);
-        } else {
-          setReplies(data.replies || []);
-        }
-      })
-      .catch((err) => setError(err.message));
-  }, [params.id]);
-
-  async function generateReply() {
-    setStatus("Generating...");
-    setError(null);
+  async function fetchDetail() {
     try {
-      const res = await fetch(`/api/conversations/${params.id}/replies`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
+      const res = await fetch(`/api/conversations/${params.id}`);
       const data = await res.json();
       if (!res.ok || data.error) {
-        setError(data.error || "Failed to generate");
-      } else if (data.reply) {
-        setReplies([...replies, data.reply]);
-        setPrompt("Write a helpful reply.");
+        setError(data.error || "Failed to load");
+      } else {
+        setDetail(data.data ?? data);
       }
     } catch (err: any) {
       setError(err.message);
-    } finally {
-      setStatus(null);
     }
   }
 
-  async function sendReply(reply: Reply) {
-    const content = window.prompt("Edit reply before sending", reply.text);
-    if (content === null) return;
-    setStatus("Sending...");
-    setSendingId(reply.id);
+  useEffect(() => {
+    fetchDetail();
+  }, [params.id]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [detail?.messages?.length]);
+
+  async function send() {
+    if (!message.trim()) return;
+    setSending(true);
     setError(null);
     try {
       const res = await fetch(`/api/conversations/${params.id}/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ replyId: reply.id, content }),
+        body: JSON.stringify({ content: message }),
       });
       const data = await res.json();
       if (!res.ok || data.error) {
         setError(data.error || "Failed to send");
       } else {
-        setStatus("Sent!");
+        setMessage("");
+        await fetchDetail();
       }
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setSendingId(null);
-      setTimeout(() => setStatus(null), 2000);
+      setSending(false);
     }
   }
 
   return (
-    <main className="min-h-screen p-4 space-y-4">
-      <Link href="/" className="text-blue-600 underline">
-        Back
-      </Link>
-      {error && <p className="text-red-600">{error}</p>}
-      {detail ? (
-        <pre className="whitespace-pre-wrap text-sm border p-2 rounded">
-          {JSON.stringify(detail, null, 2)}
-        </pre>
-      ) : (
-        <p>Loading...</p>
-      )}
-
-      <section className="space-y-2">
-        <h2 className="font-semibold">AI Replies</h2>
-        <div className="space-y-2">
-          <textarea
-            className="w-full rounded border p-2"
-            rows={3}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+    <main className="flex flex-col h-screen">
+      <div className="p-4 border-b">
+        <Link href="/" className="text-blue-600 underline">
+          Back
+        </Link>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-24">
+        {error && <p className="text-red-600">{error}</p>}
+        {detail ? (
+          detail.messages?.length ? (
+            detail.messages.map((m) => (
+              <div
+                key={m.id}
+                className={`flex ${
+                  m.sender_role === "host" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`max-w-xs rounded p-2 text-sm whitespace-pre-wrap ${
+                    m.sender_role === "host"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200"
+                  }`}
+                >
+                  {m.content}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p>No messages</p>
+          )
+        ) : (
+          <p>Loading...</p>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+      <div className="p-4 border-t fixed bottom-0 left-0 right-0 bg-white">
+        <div className="flex items-end space-x-2">
+          <input
+            className="flex-1 rounded border p-2"
+            placeholder="Type a reply..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
           />
           <button
-            onClick={generateReply}
+            onClick={send}
+            disabled={sending}
             className="rounded bg-blue-600 px-3 py-1 text-white"
           >
-            Generate Reply
+            Send
           </button>
         </div>
-        <ul className="space-y-2">
-          {replies.map((r) => (
-            <li key={r.id} className="rounded border p-2">
-              <p className="whitespace-pre-wrap text-sm mb-2">{r.text}</p>
-              <button
-                onClick={() => sendReply(r)}
-                className="rounded bg-green-600 px-2 py-1 text-white"
-                disabled={sendingId === r.id}
-              >
-                Send
-              </button>
-            </li>
-          ))}
-        </ul>
-        {status && <p>{status}</p>}
-      </section>
+      </div>
     </main>
   );
 }
