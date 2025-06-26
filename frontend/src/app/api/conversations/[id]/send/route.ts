@@ -20,7 +20,7 @@ export async function POST(
     return NextResponse.json({ error: 'Reply not found' }, { status: 404 });
   }
 
-  const res = await fetch(`${baseUrl}/send-message`, {
+  const res = await fetch(`${baseUrl}/conversations/${params.id}`, {
     method: 'POST',
     headers: {
       'Hostex-Access-Token': token,
@@ -28,8 +28,7 @@ export async function POST(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      conversation_id: params.id,
-      content: content ?? reply!.text,
+      message: content ?? reply!.text,
     }),
   });
 
