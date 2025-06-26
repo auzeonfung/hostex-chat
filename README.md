@@ -22,4 +22,4 @@ This project integrates Hostex conversations with ChatGPT, offering a web-based 
 - `POST /api/conversations/:id/replies` – generate a new reply using ChatGPT and store it.
 - `POST /api/conversations/:id/send` – send a stored reply via the Hostex API.
 
-Configure `HOSTEX_API_BASE` in the `.env` file if your Hostex endpoint differs from the default `https://openapi.hostex.com`.
+Configure `HOSTEX_API_BASE` in the `.env` file if your Hostex endpoint differs from the default `https://api.hostex.io/v3`.

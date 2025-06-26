@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   const token = process.env.HOSTEX_API_TOKEN;
-  const baseUrl = process.env.HOSTEX_API_BASE || 'https://openapi.hostex.com';
+  const baseUrl = process.env.HOSTEX_API_BASE || 'https://api.hostex.io/v3';
 
   if (!token) {
     return NextResponse.json({ error: 'HOSTEX_API_TOKEN not configured' }, { status: 500 });
@@ -12,6 +12,8 @@ export async function GET() {
   const start = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   const params = new URLSearchParams({
+    offset: '0',
+    limit: '50',
     start_time: start.toISOString(),
     end_time: end.toISOString(),
   });
@@ -19,8 +21,8 @@ export async function GET() {
   try {
     const res = await fetch(`${baseUrl}/conversations?${params.toString()}`, {
       headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        'Hostex-Access-Token': token,
+        accept: 'application/json',
       },
     });
 

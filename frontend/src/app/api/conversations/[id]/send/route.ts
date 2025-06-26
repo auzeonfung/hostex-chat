@@ -4,7 +4,7 @@ import { listReplies } from '@/lib/db';
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const { replyId } = await req.json();
   const token = process.env.HOSTEX_API_TOKEN;
-  const baseUrl = process.env.HOSTEX_API_BASE || 'https://openapi.hostex.com';
+  const baseUrl = process.env.HOSTEX_API_BASE || 'https://api.hostex.io/v3';
 
   if (!token) {
     return NextResponse.json({ error: 'HOSTEX_API_TOKEN not configured' }, { status: 500 });
@@ -20,7 +20,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const res = await fetch(`${baseUrl}/send-message`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
+      'Hostex-Access-Token': token,
+      accept: 'application/json',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ conversation_id: params.id, content: reply.text }),
