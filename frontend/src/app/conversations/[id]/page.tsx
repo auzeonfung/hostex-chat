@@ -22,6 +22,15 @@ export default function ConversationPage({ params }: { params: { id: string } })
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  function orderMessages(messages?: Message[]) {
+    if (!Array.isArray(messages)) return messages;
+    return [...messages].sort((a, b) => {
+      const ta = new Date(a.created_at ?? 0).getTime();
+      const tb = new Date(b.created_at ?? 0).getTime();
+      return ta - tb;
+    });
+  }
+
   async function fetchDetail() {
     try {
       const res = await fetch(`/api/conversations/${params.id}`);
@@ -29,7 +38,8 @@ export default function ConversationPage({ params }: { params: { id: string } })
       if (!res.ok || data.error) {
         setError(data.error || "Failed to load");
       } else {
-        setDetail(data.data ?? data);
+        const d = data.data ?? data;
+        setDetail({ ...d, messages: orderMessages(d.messages) });
       }
     } catch (err: any) {
       setError(err.message);

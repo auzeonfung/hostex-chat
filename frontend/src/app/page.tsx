@@ -43,6 +43,15 @@ export default function Home() {
       .catch((err) => setError(err.message));
   }, []);
 
+  function orderMessages(messages?: { created_at?: string }[]) {
+    if (!Array.isArray(messages)) return messages;
+    return [...messages].sort((a, b) => {
+      const ta = new Date(a.created_at ?? 0).getTime();
+      const tb = new Date(b.created_at ?? 0).getTime();
+      return ta - tb;
+    });
+  }
+
   async function fetchDetail(id: string) {
     setLoadingDetail(true);
     try {
@@ -52,7 +61,8 @@ export default function Home() {
         setError(data.error || "Failed to load");
         setDetail(null);
       } else {
-        setDetail(data.data ?? data);
+        const d = data.data ?? data;
+        setDetail({ ...d, messages: orderMessages(d.messages) });
       }
     } catch (err: any) {
       setError(err.message);
