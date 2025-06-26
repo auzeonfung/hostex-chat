@@ -20,7 +20,40 @@ export default function ConversationPage({ params }: { params: { id: string } })
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  async function generateReply(msgs: Message[]) {
+    const settings = JSON.parse(localStorage.getItem('settings') || '{}');
+    const apiKey = settings.apiKey;
+    const model = settings.model || 'gpt-3.5-turbo';
+    const prompt = settings.prompt;
+    const payload = msgs.map((m) => ({
+      role: m.sender_role === 'host' ? 'assistant' : 'user',
+      content: m.content,
+    }));
+    if (prompt) {
+      payload.unshift({ role: 'system', content: prompt });
+    }
+    setGenerating(true);
+    try {
+      const res = await fetch(`/api/conversations/${params.id}/replies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: payload, model, apiKey }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || 'Failed to generate');
+      } else {
+        setMessage(data.reply.text);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   function orderMessages(messages?: Message[]) {
     if (!Array.isArray(messages)) return messages;
@@ -39,7 +72,11 @@ export default function ConversationPage({ params }: { params: { id: string } })
         setError(data.error || "Failed to load");
       } else {
         const d = data.data ?? data;
-        setDetail({ ...d, messages: orderMessages(d.messages) });
+        const ordered = orderMessages(d.messages) as Message[] | undefined;
+        setDetail({ ...d, messages: ordered });
+        if (ordered) {
+          generateReply(ordered);
+        }
       }
     } catch (err: any) {
       setError(err.message);
@@ -80,10 +117,11 @@ export default function ConversationPage({ params }: { params: { id: string } })
 
   return (
     <main className="flex flex-col h-screen">
-      <div className="p-4 border-b">
+      <div className="p-4 border-b flex justify-between items-center">
         <Link href="/" className="text-blue-600 underline">
           Back
         </Link>
+        <a href="/settings" className="text-blue-600 underline text-sm">Settings</a>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-24">
         {error && <p className="text-red-600">{error}</p>}
@@ -123,6 +161,13 @@ export default function ConversationPage({ params }: { params: { id: string } })
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
+          <button
+            onClick={() => detail?.messages && generateReply(detail.messages)}
+            disabled={generating}
+            className="rounded bg-gray-600 px-3 py-1 text-white"
+          >
+            {generating ? '...' : 'AI'}
+          </button>
           <button
             onClick={send}
             disabled={sending}

@@ -1,0 +1,19 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(req: NextRequest) {
+  const { apiKey } = await req.json();
+  if (!apiKey) {
+    return NextResponse.json({ error: 'apiKey required' }, { status: 400 });
+  }
+  const res = await fetch('https://api.openai.com/v1/models', {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    return NextResponse.json({ error: text }, { status: res.status });
+  }
+  const data = await res.json();
+  return NextResponse.json(data);
+}
