@@ -29,7 +29,13 @@ export default function Home() {
         if (data.error) {
           setError(data.error);
         } else {
-          const list = data.conversations || data.items || data;
+          const list =
+            data.conversations ||
+            data.items ||
+            data.data?.conversations ||
+            data.data?.items ||
+            data.data ||
+            data;
           setConversations(Array.isArray(list) ? list : []);
         }
       })
