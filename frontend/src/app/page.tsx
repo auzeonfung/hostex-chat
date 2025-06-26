@@ -36,21 +36,28 @@ export default function Home() {
       .catch((err) => setError(err.message));
   }, []);
 
-  useEffect(() => {
-    if (!selectedId) return;
+  async function fetchDetail(id: string) {
     setLoadingDetail(true);
-    fetch(`/api/conversations/${selectedId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setError(data.error);
-          setDetail(null);
-        } else {
-          setDetail(data);
-        }
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoadingDetail(false));
+    try {
+      const res = await fetch(`/api/conversations/${id}`);
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Failed to load");
+        setDetail(null);
+      } else {
+        setDetail(data);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoadingDetail(false);
+    }
+  }
+
+  useEffect(() => {
+    if (selectedId) {
+      fetchDetail(selectedId);
+    }
   }, [selectedId]);
 
   async function sendMessage() {
@@ -67,8 +74,7 @@ export default function Home() {
         setError(data.error || "Failed to send");
       } else {
         setMessage("");
-        // refresh detail after sending
-        setSelectedId(selectedId);
+        await fetchDetail(selectedId);
       }
     } catch (err: any) {
       setError(err.message);
