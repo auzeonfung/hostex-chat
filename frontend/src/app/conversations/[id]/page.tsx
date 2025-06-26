@@ -35,6 +35,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
     if (prompt) {
       payload.unshift({ role: 'system', content: prompt });
     }
+    console.log('Generating reply for conversation', params.id, 'with', msgs.length, 'messages');
     setGenerating(true);
     try {
       const res = await fetch(`/api/conversations/${params.id}/replies`, {
@@ -77,6 +78,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
         if (ordered) {
           generateReply(ordered);
         }
+        console.log('Loaded conversation detail', { id: params.id, messages: ordered?.length });
       }
     } catch (err: any) {
       setError(err.message);
@@ -99,6 +101,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
         const id = data.conversationId || data.conversation_id;
         if (id === params.id) {
           fetchDetail();
+          console.log('SSE update for conversation', id, data);
         }
       } catch {
         // ignore JSON parse errors
@@ -125,6 +128,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
       } else {
         setMessage("");
         await fetchDetail();
+        console.log('Message sent', { id: params.id, content: message });
       }
     } catch (err: any) {
       setError(err.message);
@@ -155,8 +159,8 @@ export default function ConversationPage({ params }: { params: { id: string } })
                 <div
                   className={`max-w-xs rounded p-2 text-sm whitespace-pre-wrap ${
                     m.sender_role === "host"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200"
+                      ? "bg-blue-500 text-white dark:bg-blue-600"
+                      : "bg-gray-200 dark:bg-gray-700 dark:text-gray-100"
                   }`}
                 >
                   {m.content}
@@ -171,10 +175,10 @@ export default function ConversationPage({ params }: { params: { id: string } })
         )}
         <div ref={messagesEndRef} />
       </div>
-      <div className="p-4 border-t fixed bottom-0 left-0 right-0 bg-white">
+      <div className="p-4 border-t fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900">
         <div className="flex items-end space-x-2">
           <input
-            className="flex-1 rounded border p-2"
+            className="flex-1 rounded border p-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
             placeholder="Type a reply..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
