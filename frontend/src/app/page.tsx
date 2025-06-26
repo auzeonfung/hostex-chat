@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Conversation {
   id: string;
@@ -21,6 +21,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetch("/api/conversations")
@@ -66,6 +67,10 @@ export default function Home() {
     }
   }, [selectedId]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [detail?.messages?.length]);
+
   async function sendMessage() {
     if (!selectedId || !message.trim()) return;
     setSending(true);
@@ -90,11 +95,13 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex divide-x">
-      <aside className="w-1/3 max-w-sm p-4 space-y-2 overflow-y-auto">
-        <h1 className="mb-4 text-2xl font-bold">Hostex Chat</h1>
-        {error && <p className="text-red-600">{error}</p>}
-        <ul className="space-y-2">
+    <main className="h-screen flex divide-x">
+      <aside className="w-72 flex flex-col border-r">
+        <div className="p-4 border-b">
+          <h1 className="text-2xl font-bold">Hostex Chat</h1>
+        </div>
+        {error && <p className="p-4 text-red-600">{error}</p>}
+        <ul className="flex-1 overflow-y-auto p-4 space-y-2">
           {conversations.map((conv) => (
             <li key={conv.id}>
               <button
@@ -109,17 +116,33 @@ export default function Home() {
           ))}
         </ul>
       </aside>
-      <section className="flex-1 p-4 flex flex-col">
+      <section className="flex-1 flex flex-col">
         {selectedId ? (
           loadingDetail ? (
-            <p>Loading...</p>
+            <p className="p-4">Loading...</p>
           ) : detail ? (
             <>
-              <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+              <div className="p-4 border-b font-semibold">
+                {detail.subject || detail.id}
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {detail.messages ? (
                   detail.messages.map((m, idx) => (
-                    <div key={idx} className="rounded border p-2">
-                      <p className="whitespace-pre-wrap text-sm">{m.content}</p>
+                    <div
+                      key={idx}
+                      className={`flex ${
+                        m.sender_role === "host" ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-md rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                          m.sender_role === "host"
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-200"
+                        }`}
+                      >
+                        {m.content}
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -127,28 +150,33 @@ export default function Home() {
                     {JSON.stringify(detail, null, 2)}
                   </pre>
                 )}
+                <div ref={messagesEndRef} />
               </div>
-              <div className="flex items-end space-x-2">
-                <input
-                  className="flex-1 rounded border p-2"
-                  placeholder="Type a reply..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={sending}
-                  className="rounded bg-blue-600 px-3 py-1 text-white"
-                >
-                  Send
-                </button>
+              <div className="p-4 border-t">
+                <div className="flex items-end space-x-2">
+                  <input
+                    className="flex-1 rounded border p-2"
+                    placeholder="Type a reply..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={sending}
+                    className="rounded bg-blue-600 px-3 py-1 text-white"
+                  >
+                    Send
+                  </button>
+                </div>
               </div>
             </>
           ) : (
-            <p>No detail</p>
+            <p className="p-4">No detail</p>
           )
         ) : (
-          <p className="text-gray-500">Select a conversation</p>
+          <div className="flex-1 flex items-center justify-center text-gray-500">
+            Select a conversation
+          </div>
         )}
       </section>
     </main>
