@@ -21,6 +21,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [sending, setSending] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -62,7 +63,11 @@ export default function Home() {
         setDetail(null);
       } else {
         const d = data.data ?? data;
-        setDetail({ ...d, messages: orderMessages(d.messages) });
+        const ordered = orderMessages(d.messages);
+        setDetail({ ...d, messages: ordered });
+        if (ordered) {
+          generateReply(ordered);
+        }
       }
     } catch (err: any) {
       setError(err.message);
@@ -80,6 +85,38 @@ export default function Home() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [detail?.messages?.length]);
+
+  async function generateReply(msgs: { sender_role?: string; content: string }[]) {
+    const settings = JSON.parse(localStorage.getItem("settings") || "{}");
+    const apiKey = settings.apiKey;
+    const model = settings.model || "gpt-3.5-turbo";
+    const prompt = settings.prompt;
+    const payload = msgs.map((m) => ({
+      role: m.sender_role === "host" ? "assistant" : "user",
+      content: m.content,
+    }));
+    if (prompt) {
+      payload.unshift({ role: "system", content: prompt });
+    }
+    setGenerating(true);
+    try {
+      const res = await fetch(`/api/conversations/${selectedId}/replies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: payload, model, apiKey }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Failed to generate");
+      } else {
+        setMessage(data.reply.text);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   async function sendMessage() {
     if (!selectedId || !message.trim()) return;
@@ -107,8 +144,9 @@ export default function Home() {
   return (
     <main className="h-screen flex divide-x">
       <aside className="w-72 flex flex-col border-r">
-        <div className="p-4 border-b">
+        <div className="p-4 border-b flex justify-between items-center">
           <h1 className="text-2xl font-bold">Hostex Chat</h1>
+          <a href="/settings" className="text-blue-600 underline text-sm">Settings</a>
         </div>
         {error && <p className="p-4 text-red-600">{error}</p>}
         <ul className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -170,6 +208,13 @@ export default function Home() {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                   />
+                  <button
+                    onClick={() => detail?.messages && generateReply(detail.messages)}
+                    disabled={generating}
+                    className="rounded bg-gray-600 px-3 py-1 text-white"
+                  >
+                    {generating ? '...' : 'AI'}
+                  </button>
                   <button
                     onClick={sendMessage}
                     disabled={sending}

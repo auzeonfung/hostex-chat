@@ -7,9 +7,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { messages, model = 'gpt-3.5-turbo' } = await req.json();
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  const { messages, model = 'gpt-3.5-turbo', apiKey } = await req.json();
+  const key = apiKey || process.env.OPENAI_API_KEY;
+  if (!key) {
     return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
   }
 
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({ model, messages }),
   });
