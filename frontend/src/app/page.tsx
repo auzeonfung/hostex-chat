@@ -69,6 +69,7 @@ export default function Home() {
         if (ordered) {
           generateReply(ordered);
         }
+        console.log('Loaded conversation detail', { id, messages: ordered?.length });
       }
     } catch (err: any) {
       setError(err.message);
@@ -96,6 +97,7 @@ export default function Home() {
         if (!id) return;
         if (id === selectedId) {
           fetchDetail(id);
+          console.log('SSE update for conversation', id, data);
         } else {
           setUpdates((u) => ({ ...u, [id]: true }));
         }
@@ -120,6 +122,7 @@ export default function Home() {
     if (prompt) {
       payload.unshift({ role: "system", content: prompt });
     }
+    console.log('Generating reply for conversation', selectedId, 'with', msgs.length, 'messages');
     setGenerating(true);
     try {
       const res = await fetch(`/api/conversations/${selectedId}/replies`, {
@@ -155,6 +158,7 @@ export default function Home() {
       } else {
         setMessage("");
         await fetchDetail(selectedId);
+        console.log('Message sent', { id: selectedId, content: message });
       }
     } catch (err: any) {
       setError(err.message);
@@ -175,8 +179,8 @@ export default function Home() {
           {conversations.map((conv) => (
             <li key={conv.id}>
               <button
-                className={`w-full text-left rounded border p-2 hover:bg-gray-50 ${
-                  selectedId === conv.id ? "bg-gray-100" : ""
+                className={`w-full text-left rounded border p-2 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                  selectedId === conv.id ? "bg-gray-100 dark:bg-gray-800" : "dark:bg-gray-700"
                 } ${updates[conv.id] ? "border-blue-500" : ""}`}
                 onClick={() => {
                   setSelectedId(conv.id);
@@ -218,8 +222,8 @@ export default function Home() {
                       <div
                         className={`max-w-md rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
                           m.sender_role === "host"
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-200"
+                            ? "bg-blue-500 text-white dark:bg-blue-600"
+                            : "bg-gray-200 dark:bg-gray-700 dark:text-gray-100"
                         }`}
                       >
                         {m.content}
@@ -233,10 +237,10 @@ export default function Home() {
                 )}
                 <div ref={messagesEndRef} />
               </div>
-              <div className="p-4 border-t">
+              <div className="p-4 border-t dark:bg-gray-900">
                 <div className="flex items-end space-x-2">
                   <input
-                    className="flex-1 rounded border p-2"
+                    className="flex-1 rounded border p-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
                     placeholder="Type a reply..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}

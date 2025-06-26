@@ -16,7 +16,10 @@ export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
 
+  console.log('Webhook received', { signature, expected, body: rawBody });
+
   if (signature !== expected) {
+    console.warn('Invalid webhook signature');
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
@@ -34,6 +37,7 @@ export async function POST(req: NextRequest) {
     if (conversationId) {
       const event = await addWebhookEvent({ type, conversationId, payload });
       broadcast({ conversationId, message: event.payload?.data || event.payload });
+      console.log('Webhook event processed', { type, conversationId });
     }
   }
 
