@@ -23,6 +23,7 @@ export default function Home() {
   const [sending, setSending] = useState(false);
   const [generating, setGenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [updates, setUpdates] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetch("/api/conversations")
@@ -85,6 +86,27 @@ export default function Home() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [detail?.messages?.length]);
+
+  useEffect(() => {
+    const es = new EventSource('/api/events');
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        const id = data.conversationId || data.conversation_id;
+        if (!id) return;
+        if (id === selectedId) {
+          fetchDetail(id);
+        } else {
+          setUpdates((u) => ({ ...u, [id]: true }));
+        }
+      } catch {
+        // ignore JSON parse errors
+      }
+    };
+    return () => {
+      es.close();
+    };
+  }, [selectedId]);
 
   async function generateReply(msgs: { sender_role?: string; content: string }[]) {
     const settings = JSON.parse(localStorage.getItem("settings") || "{}");
@@ -155,10 +177,21 @@ export default function Home() {
               <button
                 className={`w-full text-left rounded border p-2 hover:bg-gray-50 ${
                   selectedId === conv.id ? "bg-gray-100" : ""
-                }`}
-                onClick={() => setSelectedId(conv.id)}
+                } ${updates[conv.id] ? "border-blue-500" : ""}`}
+                onClick={() => {
+                  setSelectedId(conv.id);
+                  setUpdates((u) => {
+                    const { [conv.id]: _removed, ...rest } = u;
+                    return rest;
+                  });
+                }}
               >
-                {conv.subject || conv.id}
+                <span className="flex items-center justify-between">
+                  <span>{conv.subject || conv.id}</span>
+                  {updates[conv.id] && (
+                    <span className="ml-2 inline-block h-2 w-2 rounded-full bg-blue-500" />
+                  )}
+                </span>
               </button>
             </li>
           ))}
