@@ -1,11 +1,15 @@
 {
   "compilerOptions": {
     "target": "es5",
+<<<<<<< 7z9xox-codex/开发hostex与chatgpt对接工具
+    "lib": ["dom", "dom.iterable", "esnext"],
+=======
     "lib": [
       "dom",
       "dom.iterable",
       "esnext"
     ],
+>>>>>>> main
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
@@ -19,6 +23,13 @@
     "jsx": "preserve",
     "incremental": true,
     "paths": {
+<<<<<<< 7z9xox-codex/开发hostex与chatgpt对接工具
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+=======
       "@/*": [
         "./src/*"
       ]
@@ -38,4 +49,5 @@
   "exclude": [
     "node_modules"
   ]
+>>>>>>> main
 }
