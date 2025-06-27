@@ -9,7 +9,7 @@ fi
 
 APP_DIR=/opt/hostex-chat
 REPO_URL="https://github.com/example/hostex-chat.git"
-NODE_VERSION=18
+NODE_VERSION=22
 
 # DOMAIN must be provided via environment variables
 DOMAIN="${DOMAIN:-}"
