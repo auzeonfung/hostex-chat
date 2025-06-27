@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addReply, listReplies } from '@/lib/db';
+import { addReply, listReplies, addOpenAILog } from '@/lib/db';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const replies = await listReplies(params.id);
@@ -12,6 +12,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!key) {
     return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
   }
+
+  await addOpenAILog({ conversationId: params.id, payload: { model, messages } });
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
