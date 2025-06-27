@@ -10,8 +10,15 @@ fi
 APP_DIR=/opt/hostex-chat
 REPO_URL="https://github.com/example/hostex-chat.git"
 NODE_VERSION=18
-DOMAIN="hostex-chat-c873d713.ox.ci"
-EMAIL="admin@example.com"
+
+# DOMAIN and EMAIL must be provided via environment variables
+DOMAIN="${DOMAIN:-}"
+EMAIL="${EMAIL:-}"
+
+if [ -z "$DOMAIN" ] || [ -z "$EMAIL" ]; then
+  echo "Usage: DOMAIN=example.com EMAIL=user@example.com sudo $0" >&2
+  exit 1
+fi
 
 # install system packages
 apt-get update

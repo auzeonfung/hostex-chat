@@ -92,11 +92,11 @@ repository for updates, pulls the `main` branch, rebuilds and restarts the
 service when changes are detected.
 
 ```bash
-sudo ./scripts/setup_production.sh
+DOMAIN=example.com EMAIL=admin@example.com sudo ./scripts/setup_production.sh
 ```
 
-Edit the `DOMAIN` and `EMAIL` variables inside the script if you want to use a
-different hostname or certificate email address. After the script completes the
+Specify your domain and certificate email via the `DOMAIN` and `EMAIL`
+environment variables when running the script. After it completes the
 application will be available over HTTPS.
 
 ### Codex Environment

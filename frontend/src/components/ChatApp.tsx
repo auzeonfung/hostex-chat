@@ -201,7 +201,6 @@ export default function ChatApp() {
     }
   }, [selectedId, fetchDetail])
 
-
   async function sendMessage() {
     if (!selectedId || !message.trim()) return
     setSending(true)
