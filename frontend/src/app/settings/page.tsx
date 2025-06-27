@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Model {
   id: string;
@@ -63,9 +66,9 @@ export default function Settings() {
       <div className="space-y-2">
         <label className="block">
           <span className="font-medium">OpenAI API Key</span>
-          <input
+          <Input
             type="password"
-            className="mt-1 w-full rounded border p-2"
+            className="mt-1 w-full"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
           />
@@ -87,8 +90,8 @@ export default function Settings() {
         </label>
         <label className="block">
           <span className="font-medium">System Prompt</span>
-          <textarea
-            className="mt-1 w-full rounded border p-2"
+          <Textarea
+            className="mt-1 w-full"
             rows={3}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -106,12 +109,7 @@ export default function Settings() {
             <option value="system">System</option>
           </select>
         </label>
-        <button
-          onClick={save}
-          className="rounded bg-blue-600 px-3 py-1 text-white"
-        >
-          Save
-        </button>
+        <Button onClick={save}>Save</Button>
       </div>
     </main>
   );
