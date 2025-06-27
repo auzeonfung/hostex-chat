@@ -39,32 +39,92 @@ export default function ChatApp() {
   const [loadingLogs, setLoadingLogs] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const [updates, setUpdates] = useState<Record<string, boolean>>({})
+  const [readState, setReadState] = useState<Record<string, boolean>>({})
+  const readRef = useRef(readState)
+  useEffect(() => {
+    readRef.current = readState
+  }, [readState])
+  const updatesRef = useRef(updates)
+  useEffect(() => {
+    updatesRef.current = updates
+  }, [updates])
 
   useEffect(() => {
     setSelectedId(routeId ?? null)
   }, [routeId])
 
   useEffect(() => {
-    setLoadingList(true)
-    fetch('/api/conversations')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setError(data.error)
-        } else {
-          const list =
-            data.conversations ||
-            data.items ||
-            data.data?.conversations ||
-            data.data?.items ||
-            data.data ||
-            data
-          setConversations(Array.isArray(list) ? list : [])
-        }
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoadingList(false))
+    const stored = localStorage.getItem('readState')
+    if (stored) {
+      try {
+        setReadState(JSON.parse(stored))
+      } catch {
+        // ignore parse error
+      }
+    }
   }, [])
+
+  useEffect(() => {
+    localStorage.setItem('readState', JSON.stringify(readState))
+  }, [readState])
+
+  useEffect(() => {
+    async function load() {
+      setLoadingList(true)
+      try {
+        const res = await fetch('/api/conversations')
+        const data = await res.json()
+        if (!res.ok || data.error) {
+          setError(data.error || 'Failed to load')
+          return
+        }
+        const list =
+          data.conversations ||
+          data.items ||
+          data.data?.conversations ||
+          data.data?.items ||
+          data.data ||
+          data
+
+        setConversations((prev) => {
+          const oldMap = Object.fromEntries(prev.map((c) => [c.id, c]))
+          const newReads = { ...readRef.current }
+          const newUpdates = { ...updatesRef.current }
+          const arr = Array.isArray(list) ? list : []
+          arr.forEach((conv: any) => {
+            const old = oldMap[conv.id]
+            const newLast = (conv.last_message || conv.lastMessage || {}).created_at
+            const oldLast = old ? (old.last_message || old.lastMessage || {}).created_at : undefined
+            if (!old) {
+              if (!(conv.id in newReads)) newReads[conv.id] = false
+              newUpdates[conv.id] = true
+            } else if (newLast && oldLast && new Date(newLast).getTime() > new Date(oldLast).getTime()) {
+              if (conv.id !== selectedId) {
+                newReads[conv.id] = false
+                newUpdates[conv.id] = true
+              }
+            }
+          })
+          arr.sort((a: any, b: any) => {
+            const ta = new Date((a.last_message || a.lastMessage || {}).created_at || 0).getTime()
+            const tb = new Date((b.last_message || b.lastMessage || {}).created_at || 0).getTime()
+            return tb - ta
+          })
+          setReadState(newReads)
+          setUpdates(newUpdates)
+          return arr
+        })
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setLoadingList(false)
+      }
+    }
+
+    load()
+    const id = setInterval(load, 30000)
+    return () => clearInterval(id)
+  }, [selectedId])
 
   const orderMessages = useCallback((messages?: Message[]) => {
     if (!Array.isArray(messages)) return messages
@@ -150,6 +210,8 @@ export default function ChatApp() {
           messages: ordered,
         })
 
+        setReadState((r) => ({ ...r, [id]: true }))
+
         if (ordered) {
           generateReply(ordered)
         }
@@ -191,9 +253,11 @@ export default function ChatApp() {
         if (!id) return
         if (id === selectedId) {
           fetchDetail(id)
+          setReadState((r) => ({ ...r, [id]: true }))
           console.log('WS update for conversation', id, data)
         } else {
           setUpdates((u) => ({ ...u, [id]: true }))
+          setReadState((r) => ({ ...r, [id]: false }))
         }
       } catch {
         // ignore JSON parse errors
@@ -264,9 +328,11 @@ export default function ChatApp() {
                   conv={conv}
                   selected={selectedId === conv.id}
                   hasUpdate={updates[conv.id]}
+                  unread={!readState[conv.id]}
                   onClick={() => {
                     router.push(`/chat/${conv.id}`)
                     setSelectedId(conv.id)
+                    setReadState((r) => ({ ...r, [conv.id]: true }))
                     setUpdates((u) => {
                       const { [conv.id]: _removed, ...rest } = u
                       return rest
@@ -280,10 +346,8 @@ export default function ChatApp() {
         <section className="flex-1 flex overflow-hidden">
           <div className="flex-1 flex flex-col overflow-hidden">
             {selectedId ? (
-              loadingDetail ? (
-                <p className="p-4">Loading...</p>
-              ) : detail ? (
-                <>
+              detail ? (
+                <div className="relative flex-1 flex flex-col overflow-hidden">
                   <div className="p-4 border-b font-semibold">
                     {detail.subject || detail.id}
                   </div>
@@ -329,8 +393,13 @@ export default function ChatApp() {
                         <SendIcon className="w-4 h-4" />
                       </Button>
                     </div>
-                  </div>
-                </>
+                    </div>
+                  {loadingDetail && (
+                    <div className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 flex items-center justify-center">
+                      Loading...
+                    </div>
+                  )}
+                </div>
               ) : (
                 <p className="p-4">No detail</p>
               )

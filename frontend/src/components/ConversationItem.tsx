@@ -5,6 +5,7 @@ interface Props {
   conv: any;
   selected?: boolean;
   hasUpdate?: boolean;
+  unread?: boolean;
   onClick: () => void;
 }
 
@@ -55,20 +56,24 @@ function formatTime(ts?: string) {
   return new Date(ts).toLocaleString();
 }
 
-export default function ConversationItem({ conv, selected, hasUpdate, onClick }: Props) {
+export default function ConversationItem({ conv, selected, hasUpdate, unread, onClick }: Props) {
   return (
     <li>
       <Button
         className={`w-full text-left border p-2 hover:bg-gray-50 dark:hover:bg-gray-800 h-auto ${
-          selected ? 'bg-gray-100 dark:bg-gray-800' : 'dark:bg-gray-700'
-        } ${hasUpdate ? 'border-blue-500' : ''}`}
+          selected
+            ? 'bg-gray-100 dark:bg-gray-800'
+            : unread
+            ? 'bg-blue-50 dark:bg-gray-700'
+            : 'dark:bg-gray-700'
+        } ${hasUpdate || unread ? 'border-blue-500' : ''} ${hasUpdate ? 'animate-pulse' : ''}`}
         onClick={onClick}
         variant="secondary"
         size="default"
       >
         <div className="flex w-full justify-between">
           <div className="flex-1 pr-2 overflow-hidden">
-            <div className="font-medium truncate">{getCustomerName(conv)}</div>
+            <div className={`truncate ${unread ? 'font-semibold' : 'font-medium'}`}>{getCustomerName(conv)}</div>
             {getPropertyTitle(conv) && (
               <div className="text-xs text-gray-500 truncate">
                 {getPropertyTitle(conv)}
@@ -90,7 +95,7 @@ export default function ConversationItem({ conv, selected, hasUpdate, onClick }:
                 getLastMessage(conv)?.createdAt
               )}
             </div>
-            {hasUpdate && (
+            {(hasUpdate || unread) && (
               <span className="ml-2 mt-1 inline-block h-2 w-2 rounded-full bg-blue-500" />
             )}
           </div>
