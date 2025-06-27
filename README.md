@@ -83,21 +83,23 @@ Server‑Sent Events.
 ## Production Deployment
 
 To run Hostex Chat on a public Ubuntu server you can use the helper script in
-`scripts/setup_production.sh`. It installs Node.js, Nginx and Certbot, builds the
+`scripts/setup_production.sh`. It installs Node.js and Nginx, builds the
 Next.js app and sets up a systemd service. Nginx is configured to proxy traffic
-on port 80/443 to the Node.js server running on port 3000. TLS certificates are
-issued automatically with Let's Encrypt and HTTP traffic is redirected to HTTPS
-so Cloudflare can safely connect over TLS. An additional timer checks the GitHub
-repository for updates, pulls the `main` branch, rebuilds and restarts the
-service when changes are detected.
+on port 80/443 to the Node.js server running on port 3000. The server expects an
+existing certificate in `/root/cert` named after the base domain, for example a
+domain of `abc.ox.ci` should have `/root/cert/ox.ci.pem` and
+`/root/cert/ox.ci.key`. HTTP traffic is redirected to HTTPS. An additional timer
+checks the GitHub repository for updates, pulls the `main` branch, rebuilds and
+restarts the service when changes are detected.
 
 ```bash
-DOMAIN=example.com EMAIL=admin@example.com sudo ./scripts/setup_production.sh
+DOMAIN=example.com sudo ./scripts/setup_production.sh
 ```
 
-Specify your domain and certificate email via the `DOMAIN` and `EMAIL`
-environment variables when running the script. After it completes the
-application will be available over HTTPS.
+Specify your domain via the `DOMAIN` environment variable when running the
+script. Ensure the matching certificate and key exist in `/root/cert` before
+executing the script. After it completes the application will be available over
+HTTPS.
 
 ### Codex Environment
 
