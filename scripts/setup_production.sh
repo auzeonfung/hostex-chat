@@ -115,12 +115,13 @@ systemctl enable --now hostex-chat-update.timer
 cat >/etc/nginx/sites-available/hostex-chat <<NGINX
 server {
     listen 80;
+    listen [::]:80;
     server_name $DOMAIN;
     return 301 https://\$host\$request_uri;
 }
 
 server {
-    listen 443 ssl;
+    listen [::]:443 ssl;
     server_name $DOMAIN;
 
     ssl_certificate /root/cert/$BASE_DOMAIN.pem;
