@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET() {
   const token = process.env.HOSTEX_API_TOKEN;
   const baseUrl = process.env.HOSTEX_API_BASE || 'https://api.hostex.io/v3';

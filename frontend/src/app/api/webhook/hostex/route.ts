@@ -3,6 +3,9 @@ import crypto from 'crypto';
 import { addWebhookEvent } from '@/lib/db';
 import { broadcast } from '@/lib/events';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(req: NextRequest) {
   const secret = process.env.HOSTEX_API_TOKEN;
   if (!secret) {

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addReply, listReplies, addOpenAILog } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const replies = await listReplies(params.id);
   return NextResponse.json({ replies });

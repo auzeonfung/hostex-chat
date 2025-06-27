@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(req: NextRequest) {
   const { apiKey } = await req.json();
   if (!apiKey) {
