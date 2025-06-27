@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Header from "@/components/Header";
 import ConversationItem from "@/components/ConversationItem";
 import MessageBubble, { Message } from "@/components/MessageBubble";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Conversation {
   id: string;
@@ -52,7 +54,7 @@ export default function Home() {
       .finally(() => setLoadingList(false));
   }, []);
 
-  function orderMessages(messages?: { created_at?: string }[]) {
+  function orderMessages(messages?: Message[]) {
     if (!Array.isArray(messages)) return messages;
     return [...messages].sort((a, b) => {
       const ta = new Date(a.created_at ?? 0).getTime();
@@ -227,26 +229,22 @@ export default function Home() {
                   </div>
                   <div className="p-4 border-t dark:bg-gray-900 sticky bottom-0">
                     <div className="flex items-end space-x-2">
-                      <input
-                        className="flex-1 rounded border p-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+                      <Input
+                        className="flex-1"
                         placeholder="Type a reply..."
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                       />
-                      <button
+                      <Button
                         onClick={() => detail?.messages && generateReply(detail.messages)}
                         disabled={generating}
-                        className="rounded bg-gray-600 px-3 py-1 text-white"
+                        variant="secondary"
                       >
                         {generating ? '...' : 'AI'}
-                      </button>
-                      <button
-                        onClick={sendMessage}
-                        disabled={sending}
-                        className="rounded bg-blue-600 px-3 py-1 text-white"
-                      >
+                      </Button>
+                      <Button onClick={sendMessage} disabled={sending}>
                         Send
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </>
