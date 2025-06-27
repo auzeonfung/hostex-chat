@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Header from './Header'
 import ConversationItem from './ConversationItem'
@@ -66,20 +66,63 @@ export default function ChatApp() {
       .finally(() => setLoadingList(false))
   }, [])
 
-  function orderMessages(messages?: Message[]) {
+  const orderMessages = useCallback((messages?: Message[]) => {
     if (!Array.isArray(messages)) return messages
     return [...messages].sort((a, b) => {
       const ta = new Date((a as any).created_at ?? 0).getTime()
       const tb = new Date((b as any).created_at ?? 0).getTime()
       return ta - tb
     })
-  }
+  }, [])
 
-  async function fetchDetail(id: string) {
-    setLoadingDetail(true)
-    try {
-      const res = await fetch(`/api/conversations/${id}`)
-      const data = await res.json()
+  const generateReply = useCallback(
+    async (msgs: { sender_role?: string; content: string }[]) => {
+      const settings = JSON.parse(localStorage.getItem('settings') || '{}')
+      const apiKey = settings.apiKey
+      const model = settings.model || 'gpt-3.5-turbo'
+      const prompt = settings.prompt
+      const payload = msgs.map((m) => ({
+        role: m.sender_role === 'host' ? 'assistant' : 'user',
+        content: m.content,
+      }))
+      if (prompt) {
+        payload.unshift({ role: 'system', content: prompt })
+      }
+      console.log(
+        'Generating reply for conversation',
+        selectedId,
+        'with',
+        msgs.length,
+        'messages'
+      )
+      setGenerating(true)
+      try {
+        const res = await fetch(`/api/conversations/${selectedId}/replies`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: payload, model, apiKey }),
+        })
+        const data = await res.json()
+        if (!res.ok || data.error) {
+          setError(data.error || 'Failed to generate')
+        } else {
+          setMessage(data.reply.text)
+        }
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setGenerating(false)
+      }
+    },
+    [selectedId]
+  )
+
+  const fetchDetail = useCallback(
+    async (id: string) => {
+      setLoadingDetail(true)
+      try {
+        const res = await fetch(`/api/conversations/${id}`)
+        const data = await res.json()
       if (!res.ok || data.error) {
         setError(data.error || 'Failed to load')
         setDetail(null)
@@ -120,7 +163,9 @@ export default function ChatApp() {
     } finally {
       setLoadingDetail(false)
     }
-  }
+  },
+    [orderMessages, generateReply]
+  )
 
   useEffect(() => {
     if (selectedId) {
@@ -128,7 +173,7 @@ export default function ChatApp() {
     } else {
       setDetail(null)
     }
-  }, [selectedId])
+  }, [selectedId, fetchDetail])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -154,40 +199,8 @@ export default function ChatApp() {
     return () => {
       es.close()
     }
-  }, [selectedId])
+  }, [selectedId, fetchDetail])
 
-  async function generateReply(msgs: { sender_role?: string; content: string }[]) {
-    const settings = JSON.parse(localStorage.getItem('settings') || '{}')
-    const apiKey = settings.apiKey
-    const model = settings.model || 'gpt-3.5-turbo'
-    const prompt = settings.prompt
-    const payload = msgs.map((m) => ({
-      role: m.sender_role === 'host' ? 'assistant' : 'user',
-      content: m.content,
-    }))
-    if (prompt) {
-      payload.unshift({ role: 'system', content: prompt })
-    }
-    console.log('Generating reply for conversation', selectedId, 'with', msgs.length, 'messages')
-    setGenerating(true)
-    try {
-      const res = await fetch(`/api/conversations/${selectedId}/replies`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: payload, model, apiKey }),
-      })
-      const data = await res.json()
-      if (!res.ok || data.error) {
-        setError(data.error || 'Failed to generate')
-      } else {
-        setMessage(data.reply.text)
-      }
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setGenerating(false)
-    }
-  }
 
   async function sendMessage() {
     if (!selectedId || !message.trim()) return
