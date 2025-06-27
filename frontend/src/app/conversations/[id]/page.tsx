@@ -23,6 +23,11 @@ export default function ConversationPage({ params }: { params: { id: string } })
   const [generating, setGenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  function formatTime(ts?: string) {
+    if (!ts) return '';
+    return new Date(ts).toLocaleString();
+  }
+
   async function generateReply(msgs: Message[]) {
     const settings = JSON.parse(localStorage.getItem('settings') || '{}');
     const apiKey = settings.apiKey;
@@ -138,19 +143,20 @@ export default function ConversationPage({ params }: { params: { id: string } })
   }
 
   return (
-    <main className="flex flex-col h-screen">
-      <div className="p-4 border-b flex justify-between items-center">
-        <Link href="/" className="text-blue-600 underline">
-          Back
-        </Link>
-        <a href="/settings" className="text-blue-600 underline text-sm">Settings</a>
-      </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-24">
-        {error && <p className="text-red-600">{error}</p>}
-        {detail ? (
-          detail.messages?.length ? (
-            detail.messages.map((m) => (
-              <div
+    <main className="flex h-screen">
+      <div className="flex-1 flex flex-col">
+        <div className="p-4 border-b flex justify-between items-center">
+          <Link href="/" className="text-blue-600 underline">
+            Back
+          </Link>
+          <a href="/settings" className="text-blue-600 underline text-sm">Settings</a>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-24">
+          {error && <p className="text-red-600">{error}</p>}
+          {detail ? (
+            detail.messages?.length ? (
+              detail.messages.map((m) => (
+                <div
                 key={m.id}
                 className={`flex ${
                   m.sender_role === "host" ? "justify-end" : "justify-start"
@@ -174,9 +180,9 @@ export default function ConversationPage({ params }: { params: { id: string } })
           <p>Loading...</p>
         )}
         <div ref={messagesEndRef} />
-      </div>
-      <div className="p-4 border-t fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900">
-        <div className="flex items-end space-x-2">
+        </div>
+        <div className="p-4 border-t dark:bg-gray-900 sticky bottom-0">
+          <div className="flex items-end space-x-2">
           <input
             className="flex-1 rounded border p-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
             placeholder="Type a reply..."
@@ -197,8 +203,27 @@ export default function ConversationPage({ params }: { params: { id: string } })
           >
             Send
           </button>
+          </div>
         </div>
       </div>
+      {detail && (
+        <aside className="hidden w-60 shrink-0 border-l p-4 space-y-4 overflow-y-auto md:block">
+          {detail.customer && (
+            <div>
+              <h2 className="font-semibold mb-1">Customer</h2>
+              <div className="text-sm">{detail.customer.name || detail.customer.full_name}</div>
+              <pre className="whitespace-pre-wrap text-xs mt-2">{JSON.stringify(detail.customer, null, 2)}</pre>
+            </div>
+          )}
+          {detail.property && (
+            <div>
+              <h2 className="font-semibold mb-1">Property</h2>
+              <div className="text-sm">{detail.property.name || detail.property.title}</div>
+              <pre className="whitespace-pre-wrap text-xs mt-2">{JSON.stringify(detail.property, null, 2)}</pre>
+            </div>
+          )}
+        </aside>
+      )}
     </main>
   );
 }
