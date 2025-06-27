@@ -180,15 +180,18 @@ export default function ChatApp() {
   }, [detail?.messages?.length])
 
   useEffect(() => {
-    const es = new EventSource('/api/events')
-    es.onmessage = (e) => {
+    // start websocket server and connect
+    fetch('/api/events').catch(() => {})
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const ws = new WebSocket(`${protocol}://${window.location.host}/api/events`)
+    ws.onmessage = (e) => {
       try {
-        const data = JSON.parse(e.data)
+        const data = JSON.parse(e.data as string)
         const id = data.conversationId || data.conversation_id
         if (!id) return
         if (id === selectedId) {
           fetchDetail(id)
-          console.log('SSE update for conversation', id, data)
+          console.log('WS update for conversation', id, data)
         } else {
           setUpdates((u) => ({ ...u, [id]: true }))
         }
@@ -197,7 +200,7 @@ export default function ChatApp() {
       }
     }
     return () => {
-      es.close()
+      ws.close()
     }
   }, [selectedId, fetchDetail])
 
