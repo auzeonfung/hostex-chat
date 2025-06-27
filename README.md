@@ -15,6 +15,10 @@ This project integrates Hostex conversations with ChatGPT, offering a web-based 
    npm run dev
    ```
 
+The application stores data in a SQLite database file named `db.sqlite` in the
+project root. Installing the dependencies will automatically provide the
+required SQLite driver.
+
 ## API Routes
 
 - `GET /api/conversations` – fetches Hostex conversations from the last 7 days.
