@@ -11,14 +11,16 @@ APP_DIR=/opt/hostex-chat
 REPO_URL="https://github.com/example/hostex-chat.git"
 NODE_VERSION=18
 
-# DOMAIN and EMAIL must be provided via environment variables
+# DOMAIN must be provided via environment variables
 DOMAIN="${DOMAIN:-}"
-EMAIL="${EMAIL:-}"
 
-if [ -z "$DOMAIN" ] || [ -z "$EMAIL" ]; then
-  echo "Usage: DOMAIN=example.com EMAIL=user@example.com sudo $0" >&2
+if [ -z "$DOMAIN" ]; then
+  echo "Usage: DOMAIN=example.com sudo $0" >&2
   exit 1
 fi
+
+# derive base domain for certificate lookup (e.g. abc.ox.ci -> ox.ci)
+BASE_DOMAIN="${DOMAIN#*.}"
 
 # install system packages
 apt-get update
@@ -114,6 +116,15 @@ cat >/etc/nginx/sites-available/hostex-chat <<NGINX
 server {
     listen 80;
     server_name $DOMAIN;
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name $DOMAIN;
+
+    ssl_certificate /root/cert/$BASE_DOMAIN.pem;
+    ssl_certificate_key /root/cert/$BASE_DOMAIN.key;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -128,10 +139,4 @@ NGINX
 
 ln -sf /etc/nginx/sites-available/hostex-chat /etc/nginx/sites-enabled/hostex-chat
 rm -f /etc/nginx/sites-enabled/default
-systemctl reload nginx
-
-# install certbot and obtain certificate
-apt-get install -y certbot python3-certbot-nginx
-certbot --nginx --redirect -d $DOMAIN --non-interactive --agree-tos -m $EMAIL
-
 systemctl reload nginx
