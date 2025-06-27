@@ -75,6 +75,48 @@ export default function ChatApp() {
     })
   }, [])
 
+  const generateReply = useCallback(
+    async (msgs: { sender_role?: string; content: string }[]) => {
+      const settings = JSON.parse(localStorage.getItem('settings') || '{}')
+      const apiKey = settings.apiKey
+      const model = settings.model || 'gpt-3.5-turbo'
+      const prompt = settings.prompt
+      const payload = msgs.map((m) => ({
+        role: m.sender_role === 'host' ? 'assistant' : 'user',
+        content: m.content,
+      }))
+      if (prompt) {
+        payload.unshift({ role: 'system', content: prompt })
+      }
+      console.log(
+        'Generating reply for conversation',
+        selectedId,
+        'with',
+        msgs.length,
+        'messages'
+      )
+      setGenerating(true)
+      try {
+        const res = await fetch(`/api/conversations/${selectedId}/replies`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: payload, model, apiKey }),
+        })
+        const data = await res.json()
+        if (!res.ok || data.error) {
+          setError(data.error || 'Failed to generate')
+        } else {
+          setMessage(data.reply.text)
+        }
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setGenerating(false)
+      }
+    },
+    [selectedId]
+  )
+
   const fetchDetail = useCallback(
     async (id: string) => {
       setLoadingDetail(true)
@@ -158,40 +200,6 @@ export default function ChatApp() {
       es.close()
     }
   }, [selectedId, fetchDetail])
-
-  const generateReply = useCallback(
-    async (msgs: { sender_role?: string; content: string }[]) => {
-      const settings = JSON.parse(localStorage.getItem('settings') || '{}')
-      const apiKey = settings.apiKey
-      const model = settings.model || 'gpt-3.5-turbo'
-    const prompt = settings.prompt
-    const payload = msgs.map((m) => ({
-      role: m.sender_role === 'host' ? 'assistant' : 'user',
-      content: m.content,
-    }))
-    if (prompt) {
-      payload.unshift({ role: 'system', content: prompt })
-    }
-    console.log('Generating reply for conversation', selectedId, 'with', msgs.length, 'messages')
-    setGenerating(true)
-    try {
-      const res = await fetch(`/api/conversations/${selectedId}/replies`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: payload, model, apiKey }),
-      })
-      const data = await res.json()
-      if (!res.ok || data.error) {
-        setError(data.error || 'Failed to generate')
-      } else {
-        setMessage(data.reply.text)
-      }
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setGenerating(false)
-    }
-  }, [selectedId])
 
   async function sendMessage() {
     if (!selectedId || !message.trim()) return
