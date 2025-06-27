@@ -66,7 +66,7 @@ export default function ConversationItem({ conv, selected, hasUpdate, unread, on
             : unread
             ? 'bg-blue-50 dark:bg-gray-700'
             : 'dark:bg-gray-700'
-        } ${hasUpdate || unread ? 'border-blue-500' : ''} ${hasUpdate ? 'animate-pulse' : ''}`}
+        } ${hasUpdate || unread ? 'border-blue-500' : ''} ${hasUpdate ? 'border-blue-800' : ''}`}
         onClick={onClick}
         variant="secondary"
         size="default"
