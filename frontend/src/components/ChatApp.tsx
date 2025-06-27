@@ -85,12 +85,35 @@ export default function ChatApp() {
         setDetail(null)
       } else {
         const d = data.data ?? data
+
+        const activity = Array.isArray(d.activities)
+          ? d.activities.find((a: any) => a.property)
+          : null
+
+        const property = d.property || activity?.property || null
+        const checkIn =
+          d.check_in_date || activity?.check_in_date || null
+        const checkOut =
+          d.check_out_date || activity?.check_out_date || null
+
         const ordered = orderMessages(d.messages)
-        setDetail({ ...d, messages: ordered })
+
+        setDetail({
+          ...d,
+          property,
+          customer: d.customer || d.guest,
+          check_in_date: checkIn,
+          check_out_date: checkOut,
+          messages: ordered,
+        })
+
         if (ordered) {
           generateReply(ordered)
         }
-        console.log('Loaded conversation detail', { id, messages: ordered?.length })
+        console.log('Loaded conversation detail', {
+          id,
+          messages: ordered?.length,
+        })
       }
     } catch (err: any) {
       setError(err.message)
@@ -315,6 +338,11 @@ export default function ChatApp() {
                 <div>
                   <h2 className="font-semibold mb-1">Property</h2>
                   <div className="text-sm">{detail.property.name || detail.property.title}</div>
+                  {detail.check_in_date && detail.check_out_date && (
+                    <div className="text-xs text-gray-500">
+                      {detail.check_in_date} - {detail.check_out_date}
+                    </div>
+                  )}
                   <pre className="whitespace-pre-wrap text-xs mt-2">{JSON.stringify(detail.property, null, 2)}</pre>
                 </div>
               )}
