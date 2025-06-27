@@ -83,7 +83,7 @@ Server‑Sent Events.
 ## Production Deployment
 
 To run Hostex Chat on a public Ubuntu server you can use the helper script in
-`scripts/setup_production.sh`. It installs Node.js and Nginx, builds the
+`scripts/setup_production.sh`. It installs Node.js 22 LTS and Nginx, builds the
 Next.js app and sets up a systemd service. Nginx is configured to proxy traffic
 on port 80/443 to the Node.js server running on port 3000. The server expects an
 existing certificate in `/root/cert` named after the base domain, for example a
