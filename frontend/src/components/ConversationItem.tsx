@@ -59,14 +59,14 @@ export default function ConversationItem({ conv, selected, hasUpdate, onClick }:
   return (
     <li>
       <Button
-        className={`w-full text-left border p-2 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+        className={`w-full text-left border p-2 hover:bg-gray-50 dark:hover:bg-gray-800 h-auto ${
           selected ? 'bg-gray-100 dark:bg-gray-800' : 'dark:bg-gray-700'
         } ${hasUpdate ? 'border-blue-500' : ''}`}
         onClick={onClick}
         variant="secondary"
         size="default"
       >
-        <div className="flex justify-between">
+        <div className="flex w-full justify-between">
           <div className="flex-1 pr-2 overflow-hidden">
             <div className="font-medium truncate">{getCustomerName(conv)}</div>
             {getPropertyTitle(conv) && (

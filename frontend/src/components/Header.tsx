@@ -5,7 +5,7 @@ import { Settings, ArrowLeft } from 'lucide-react';
 
 export default function Header({ backHref }: { backHref?: string }) {
   return (
-    <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur p-4 flex justify-between items-center sticky top-0 z-10">
+    <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur p-2 flex justify-between items-center sticky top-0 z-10">
       <div className="flex items-center space-x-2">
         {backHref && (
           <Button asChild variant="ghost" size="icon">

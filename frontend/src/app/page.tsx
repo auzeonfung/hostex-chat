@@ -178,9 +178,9 @@ export default function Home() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden w-full h-full">
       <Header />
-      <main className="flex flex-1 divide-x overflow-hidden">
+      <main className="flex flex-1 divide-x overflow-hidden h-full">
         <aside className="w-72 flex flex-col border-r overflow-hidden">
           {loadingList ? (
             <p className="p-4">Loading...</p>
