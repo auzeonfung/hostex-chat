@@ -35,6 +35,25 @@ export default function Home() {
     );
   }
 
+  function getPropertyTitle(conv: any) {
+    return (
+      conv.property_title ||
+      conv.property?.title ||
+      conv.property?.name ||
+      ''
+    );
+  }
+
+  function getStayDates(conv: any) {
+    const inDate = conv.check_in_date || conv.checkInDate;
+    const outDate = conv.check_out_date || conv.checkOutDate;
+    return inDate && outDate ? `${inDate} - ${outDate}` : '';
+  }
+
+  function getChannel(conv: any) {
+    return conv.channel_type || conv.channelType || '';
+  }
+
   function getLastMessage(conv: any) {
     if (Array.isArray(conv.messages) && conv.messages.length) {
       return conv.messages[conv.messages.length - 1];
@@ -223,19 +242,31 @@ export default function Home() {
                     <div className="font-medium truncate">
                       {getCustomerName(conv)}
                     </div>
+                    {getPropertyTitle(conv) && (
+                      <div className="text-xs text-gray-500 truncate">
+                        {getPropertyTitle(conv)}
+                      </div>
+                    )}
+                    {(getStayDates(conv) || getChannel(conv)) && (
+                      <div className="text-xs text-gray-500 truncate">
+                        {getStayDates(conv)}{getChannel(conv) ? ` • ${getChannel(conv)}` : ''}
+                      </div>
+                    )}
                     <div className="text-xs text-gray-500 truncate">
                       {preview(getLastMessage(conv)?.content)}
                     </div>
                   </div>
-                  <div className="text-xs text-gray-500 whitespace-nowrap pl-2">
-                    {formatTime(
-                      getLastMessage(conv)?.created_at ||
-                        getLastMessage(conv)?.createdAt
+                  <div className="text-right pl-2">
+                    <div className="text-xs text-gray-500 whitespace-nowrap">
+                      {formatTime(
+                        getLastMessage(conv)?.created_at ||
+                          getLastMessage(conv)?.createdAt
+                      )}
+                    </div>
+                    {updates[conv.id] && (
+                      <span className="ml-2 mt-1 inline-block h-2 w-2 rounded-full bg-blue-500" />
                     )}
                   </div>
-                  {updates[conv.id] && (
-                    <span className="ml-2 mt-1 inline-block h-2 w-2 rounded-full bg-blue-500" />
-                  )}
                 </div>
               </button>
             </li>
