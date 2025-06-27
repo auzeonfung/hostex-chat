@@ -5,7 +5,8 @@ import Header from "@/components/Header";
 import ConversationItem from "@/components/ConversationItem";
 import MessageBubble, { Message } from "@/components/MessageBubble";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Sparkles, Send as SendIcon } from "lucide-react";
 
 interface Conversation {
   id: string;
@@ -177,10 +178,10 @@ export default function Home() {
   }
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col overflow-hidden">
       <Header />
-      <main className="flex flex-1 divide-x">
-        <aside className="w-72 flex flex-col border-r">
+      <main className="flex flex-1 divide-x overflow-hidden">
+        <aside className="w-72 flex flex-col border-r overflow-hidden">
           {loadingList ? (
             <p className="p-4">Loading...</p>
           ) : error ? (
@@ -205,8 +206,8 @@ export default function Home() {
             </ul>
           )}
         </aside>
-        <section className="flex-1 flex">
-          <div className="flex-1 flex flex-col">
+        <section className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {selectedId ? (
               loadingDetail ? (
                 <p className="p-4">Loading...</p>
@@ -229,21 +230,24 @@ export default function Home() {
                   </div>
                   <div className="p-4 border-t dark:bg-gray-900 sticky bottom-0">
                     <div className="flex items-end space-x-2">
-                      <Input
-                        className="flex-1"
+                      <Textarea
+                        className="flex-1 resize-y min-h-[40px]"
                         placeholder="Type a reply..."
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
+                        rows={1}
                       />
                       <Button
                         onClick={() => detail?.messages && generateReply(detail.messages)}
                         disabled={generating}
                         variant="secondary"
+                        size="icon"
+                        aria-label="Generate"
                       >
-                        {generating ? '...' : 'AI'}
+                        {generating ? '...' : <Sparkles className="w-4 h-4" />}
                       </Button>
-                      <Button onClick={sendMessage} disabled={sending}>
-                        Send
+                      <Button onClick={sendMessage} disabled={sending} size="icon" aria-label="Send">
+                        <SendIcon className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
