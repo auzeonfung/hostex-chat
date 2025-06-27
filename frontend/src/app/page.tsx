@@ -25,6 +25,34 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [updates, setUpdates] = useState<Record<string, boolean>>({});
 
+  function getCustomerName(conv: any) {
+    return (
+      conv.customer?.name ||
+      conv.customer_name ||
+      conv.name ||
+      conv.subject ||
+      conv.id
+    );
+  }
+
+  function getLastMessage(conv: any) {
+    if (Array.isArray(conv.messages) && conv.messages.length) {
+      return conv.messages[conv.messages.length - 1];
+    }
+    return conv.last_message || conv.lastMessage || null;
+  }
+
+  function preview(content?: string) {
+    if (!content) return '';
+    const line = content.split('\n')[0];
+    return line.length > 50 ? line.slice(0, 50) + '...' : line;
+  }
+
+  function formatTime(ts?: string) {
+    if (!ts) return '';
+    return new Date(ts).toLocaleString();
+  }
+
   useEffect(() => {
     fetch("/api/conversations")
       .then((res) => res.json())
@@ -190,23 +218,37 @@ export default function Home() {
                   });
                 }}
               >
-                <span className="flex items-center justify-between">
-                  <span>{conv.subject || conv.id}</span>
+                <div className="flex justify-between">
+                  <div className="flex-1 pr-2 overflow-hidden">
+                    <div className="font-medium truncate">
+                      {getCustomerName(conv)}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">
+                      {preview(getLastMessage(conv)?.content)}
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 whitespace-nowrap pl-2">
+                    {formatTime(
+                      getLastMessage(conv)?.created_at ||
+                        getLastMessage(conv)?.createdAt
+                    )}
+                  </div>
                   {updates[conv.id] && (
-                    <span className="ml-2 inline-block h-2 w-2 rounded-full bg-blue-500" />
+                    <span className="ml-2 mt-1 inline-block h-2 w-2 rounded-full bg-blue-500" />
                   )}
-                </span>
+                </div>
               </button>
             </li>
           ))}
         </ul>
       </aside>
-      <section className="flex-1 flex flex-col">
-        {selectedId ? (
-          loadingDetail ? (
-            <p className="p-4">Loading...</p>
-          ) : detail ? (
-            <>
+      <section className="flex-1 flex">
+        <div className="flex-1 flex flex-col">
+          {selectedId ? (
+            loadingDetail ? (
+              <p className="p-4">Loading...</p>
+            ) : detail ? (
+              <>
               <div className="p-4 border-b font-semibold">
                 {detail.subject || detail.id}
               </div>
@@ -237,7 +279,7 @@ export default function Home() {
                 )}
                 <div ref={messagesEndRef} />
               </div>
-              <div className="p-4 border-t dark:bg-gray-900">
+              <div className="p-4 border-t dark:bg-gray-900 sticky bottom-0">
                 <div className="flex items-end space-x-2">
                   <input
                     className="flex-1 rounded border p-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
@@ -269,6 +311,25 @@ export default function Home() {
           <div className="flex-1 flex items-center justify-center text-gray-500">
             Select a conversation
           </div>
+        )}
+        </div>
+        {detail && (
+          <aside className="hidden w-60 shrink-0 border-l p-4 space-y-4 overflow-y-auto md:block">
+            {detail.customer && (
+              <div>
+                <h2 className="font-semibold mb-1">Customer</h2>
+                <div className="text-sm">{detail.customer.name || detail.customer.full_name}</div>
+                <pre className="whitespace-pre-wrap text-xs mt-2">{JSON.stringify(detail.customer, null, 2)}</pre>
+              </div>
+            )}
+            {detail.property && (
+              <div>
+                <h2 className="font-semibold mb-1">Property</h2>
+                <div className="text-sm">{detail.property.name || detail.property.title}</div>
+                <pre className="whitespace-pre-wrap text-xs mt-2">{JSON.stringify(detail.property, null, 2)}</pre>
+              </div>
+            )}
+          </aside>
         )}
       </section>
     </main>
