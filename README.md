@@ -79,3 +79,34 @@ dashboard with the following settings:
 
 Webhook payloads are stored in `db.sqlite` and broadcast to connected clients via
 Server‑Sent Events.
+
+## Production Deployment
+
+To run Hostex Chat on a public Ubuntu server you can use the helper script in
+`scripts/setup_production.sh`. It installs Node.js, Nginx and Certbot, builds the
+Next.js app and sets up a systemd service. Nginx is configured to proxy traffic
+on port 80/443 to the Node.js server running on port 3000. TLS certificates are
+issued automatically with Let's Encrypt and HTTP traffic is redirected to HTTPS
+so Cloudflare can safely connect over TLS. An additional timer checks the GitHub
+repository for updates, pulls the `main` branch, rebuilds and restarts the
+service when changes are detected.
+
+```bash
+sudo ./scripts/setup_production.sh
+```
+
+Edit the `DOMAIN` and `EMAIL` variables inside the script if you want to use a
+different hostname or certificate email address. After the script completes the
+application will be available over HTTPS.
+
+### Codex Environment
+
+For the Codex test environment you can install the minimal dependencies using
+`scripts/setup_codex.sh`:
+
+```bash
+./scripts/setup_codex.sh
+```
+
+This installs Node.js and the project dependencies so Codex can run the build or
+test commands.
