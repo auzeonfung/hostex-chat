@@ -1,5 +1,5 @@
 import ChatApp from '@/components/ChatApp'
 
-export default function Home() {
+export default function ChatPage() {
   return <ChatApp />
 }
