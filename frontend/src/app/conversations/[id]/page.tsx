@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import MessageBubble, { Message } from "@/components/MessageBubble";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Send as SendIcon } from "lucide-react";
+import { Sparkles, Send as SendIcon, FileText } from "lucide-react";
 
 interface ChatMessage extends Message {
   id: string;
@@ -22,6 +22,9 @@ export default function ConversationPage({ params }: { params: { id: string } })
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
 
@@ -90,6 +93,24 @@ export default function ConversationPage({ params }: { params: { id: string } })
   useEffect(() => {
     fetchDetail();
   }, [params.id]);
+
+  async function openLogs() {
+    setShowLogs(true);
+    setLoadingLogs(true);
+    try {
+      const res = await fetch(`/api/conversations/${params.id}/openai-logs`);
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.logs)) {
+        setLogs(data.logs);
+      } else {
+        setLogs([]);
+      }
+    } catch {
+      setLogs([]);
+    } finally {
+      setLoadingLogs(false);
+    }
+  }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -177,6 +198,14 @@ export default function ConversationPage({ params }: { params: { id: string } })
               >
                 {generating ? '...' : <Sparkles className="w-4 h-4" />}
               </Button>
+              <Button
+                onClick={openLogs}
+                variant="secondary"
+                size="icon"
+                aria-label="Logs"
+              >
+                <FileText className="w-4 h-4" />
+              </Button>
               <Button onClick={send} disabled={sending} size="icon" aria-label="Send">
                 <SendIcon className="w-4 h-4" />
               </Button>
@@ -202,6 +231,27 @@ export default function ConversationPage({ params }: { params: { id: string } })
           </aside>
         )}
       </main>
+      {showLogs && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded max-h-[80vh] overflow-y-auto w-[90%] max-w-lg">
+            <h2 className="text-lg font-semibold mb-2">OpenAI Logs</h2>
+            {loadingLogs ? (
+              <p>Loading...</p>
+            ) : logs.length ? (
+              logs.map((log) => (
+                <pre key={log.id} className="mb-4 whitespace-pre-wrap text-xs border p-2 rounded">
+                  {JSON.stringify(log.payload, null, 2)}
+                </pre>
+              ))
+            ) : (
+              <p>No logs</p>
+            )}
+            <div className="text-right mt-2">
+              <Button onClick={() => setShowLogs(false)}>Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

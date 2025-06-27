@@ -18,6 +18,13 @@ export interface WebhookEvent {
   receivedAt: string;
 }
 
+export interface OpenAILog {
+  id: string;
+  conversationId: string;
+  payload: any;
+  createdAt: string;
+}
+
 const DB_PATH = path.join(process.cwd(), 'db.sqlite');
 const db = new Database(DB_PATH);
 
@@ -35,6 +42,12 @@ db.exec(`
     conversation_id TEXT,
     payload TEXT,
     received_at TEXT
+  );
+  CREATE TABLE IF NOT EXISTS openai_logs (
+    id TEXT PRIMARY KEY,
+    conversation_id TEXT,
+    payload TEXT,
+    created_at TEXT
   );
 `);
 
@@ -99,6 +112,33 @@ export async function listWebhookEvents(
     `SELECT id, type, conversation_id as conversationId, payload, received_at as receivedAt
      FROM webhook_events ${where} ORDER BY received_at`,
     conversationId ? [conversationId] : []
+  );
+  return rows.map((r: any) => ({
+    ...r,
+    payload: JSON.parse(r.payload),
+  }));
+}
+
+export async function addOpenAILog(
+  log: Omit<OpenAILog, 'id' | 'createdAt'>,
+): Promise<OpenAILog> {
+  const id = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+  await run(
+    `INSERT INTO openai_logs (id, conversation_id, payload, created_at)
+     VALUES (?, ?, ?, ?)`,
+    [id, log.conversationId, JSON.stringify(log.payload), createdAt]
+  );
+  return { id, createdAt, ...log };
+}
+
+export async function listOpenAILogs(
+  conversationId: string,
+): Promise<OpenAILog[]> {
+  const rows = await run(
+    `SELECT id, conversation_id as conversationId, payload, created_at as createdAt
+     FROM openai_logs WHERE conversation_id=? ORDER BY created_at`,
+    [conversationId]
   );
   return rows.map((r: any) => ({
     ...r,
