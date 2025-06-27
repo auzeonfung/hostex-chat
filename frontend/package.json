@@ -15,7 +15,8 @@
     "better-sqlite3": "^9.4.1",
     "@radix-ui/react-slot": "latest",
     "class-variance-authority": "latest",
-    "tailwindcss-animate": "latest"
+    "tailwindcss-animate": "latest",
+    "lucide-react": "latest"
   },
   "devDependencies": {
     "typescript": "5.4.5",

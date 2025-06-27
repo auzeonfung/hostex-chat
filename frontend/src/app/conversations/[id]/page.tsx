@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import Header from "@/components/Header";
 import MessageBubble, { Message } from "@/components/MessageBubble";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Sparkles, Send as SendIcon } from "lucide-react";
 
 interface ChatMessage extends Message {
   id: string;
@@ -139,10 +140,10 @@ export default function ConversationPage({ params }: { params: { id: string } })
   }
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col overflow-hidden">
       <Header backHref="/" />
-      <main className="flex flex-1">
-        <div className="flex-1 flex flex-col">
+      <main className="flex flex-1 overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-24">
             {error && <p className="text-red-600">{error}</p>}
             {detail ? (
@@ -160,21 +161,24 @@ export default function ConversationPage({ params }: { params: { id: string } })
           </div>
           <div className="p-4 border-t dark:bg-gray-900 sticky bottom-0">
             <div className="flex items-end space-x-2">
-              <Input
-                className="flex-1"
+              <Textarea
+                className="flex-1 resize-y min-h-[40px]"
                 placeholder="Type a reply..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                rows={1}
               />
               <Button
                 onClick={() => detail?.messages && generateReply(detail.messages)}
                 disabled={generating}
                 variant="secondary"
+                size="icon"
+                aria-label="Generate"
               >
-                {generating ? '...' : 'AI'}
+                {generating ? '...' : <Sparkles className="w-4 h-4" />}
               </Button>
-              <Button onClick={send} disabled={sending}>
-                Send
+              <Button onClick={send} disabled={sending} size="icon" aria-label="Send">
+                <SendIcon className="w-4 h-4" />
               </Button>
             </div>
           </div>
