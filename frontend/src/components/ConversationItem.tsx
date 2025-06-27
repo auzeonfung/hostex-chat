@@ -1,4 +1,5 @@
 'use client';
+import { Button } from './ui/button'
 
 interface Props {
   conv: any;
@@ -57,11 +58,13 @@ function formatTime(ts?: string) {
 export default function ConversationItem({ conv, selected, hasUpdate, onClick }: Props) {
   return (
     <li>
-      <button
-        className={`w-full text-left rounded border p-2 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+      <Button
+        className={`w-full text-left border p-2 hover:bg-gray-50 dark:hover:bg-gray-800 ${
           selected ? 'bg-gray-100 dark:bg-gray-800' : 'dark:bg-gray-700'
         } ${hasUpdate ? 'border-blue-500' : ''}`}
         onClick={onClick}
+        variant="secondary"
+        size="default"
       >
         <div className="flex justify-between">
           <div className="flex-1 pr-2 overflow-hidden">
@@ -92,7 +95,7 @@ export default function ConversationItem({ conv, selected, hasUpdate, onClick }:
             )}
           </div>
         </div>
-      </button>
+      </Button>
     </li>
   );
 }
