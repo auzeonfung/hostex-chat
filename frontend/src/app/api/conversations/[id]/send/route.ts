@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listReplies } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

@@ -1,5 +1,8 @@
 import { addClient, removeClient } from '@/lib/events';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export function GET(req: Request) {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
