@@ -1,17 +1,15 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Header from "@/components/Header";
+import MessageBubble, { Message } from "@/components/MessageBubble";
 
-interface Message {
+interface ChatMessage extends Message {
   id: string;
-  sender_role?: string;
-  content: string;
-  created_at?: string;
 }
 
 interface ConversationDetail {
   id: string;
-  messages?: Message[];
+  messages?: ChatMessage[];
   [key: string]: any;
 }
 
@@ -23,10 +21,6 @@ export default function ConversationPage({ params }: { params: { id: string } })
   const [generating, setGenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  function formatTime(ts?: string) {
-    if (!ts) return '';
-    return new Date(ts).toLocaleString();
-  }
 
   async function generateReply(msgs: Message[]) {
     const settings = JSON.parse(localStorage.getItem('settings') || '{}');
@@ -143,87 +137,69 @@ export default function ConversationPage({ params }: { params: { id: string } })
   }
 
   return (
-    <main className="flex h-screen">
-      <div className="flex-1 flex flex-col">
-        <div className="p-4 border-b flex justify-between items-center">
-          <Link href="/" className="text-blue-600 underline">
-            Back
-          </Link>
-          <a href="/settings" className="text-blue-600 underline text-sm">Settings</a>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-24">
-          {error && <p className="text-red-600">{error}</p>}
-          {detail ? (
-            detail.messages?.length ? (
-              detail.messages.map((m) => (
-                <div
-                key={m.id}
-                className={`flex ${
-                  m.sender_role === "host" ? "justify-end" : "justify-start"
-                }`}
+    <div className="flex-1 flex flex-col">
+      <Header backHref="/" />
+      <main className="flex flex-1">
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-24">
+            {error && <p className="text-red-600">{error}</p>}
+            {detail ? (
+              detail.messages?.length ? (
+                detail.messages.map((m) => (
+                  <MessageBubble key={m.id} message={m} />
+                ))
+              ) : (
+                <p>No messages</p>
+              )
+            ) : (
+              <p>Loading...</p>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+          <div className="p-4 border-t dark:bg-gray-900 sticky bottom-0">
+            <div className="flex items-end space-x-2">
+              <input
+                className="flex-1 rounded border p-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+                placeholder="Type a reply..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+              <button
+                onClick={() => detail?.messages && generateReply(detail.messages)}
+                disabled={generating}
+                className="rounded bg-gray-600 px-3 py-1 text-white"
               >
-                <div
-                  className={`max-w-xs rounded p-2 text-sm whitespace-pre-wrap ${
-                    m.sender_role === "host"
-                      ? "bg-blue-500 text-white dark:bg-blue-600"
-                      : "bg-gray-200 dark:bg-gray-700 dark:text-gray-100"
-                  }`}
-                >
-                  {m.content}
-                </div>
-              </div>
-            ))
-          ) : (
-            <p>No messages</p>
-          )
-        ) : (
-          <p>Loading...</p>
-        )}
-        <div ref={messagesEndRef} />
-        </div>
-        <div className="p-4 border-t dark:bg-gray-900 sticky bottom-0">
-          <div className="flex items-end space-x-2">
-          <input
-            className="flex-1 rounded border p-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
-            placeholder="Type a reply..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-          <button
-            onClick={() => detail?.messages && generateReply(detail.messages)}
-            disabled={generating}
-            className="rounded bg-gray-600 px-3 py-1 text-white"
-          >
-            {generating ? '...' : 'AI'}
-          </button>
-          <button
-            onClick={send}
-            disabled={sending}
-            className="rounded bg-blue-600 px-3 py-1 text-white"
-          >
-            Send
-          </button>
+                {generating ? '...' : 'AI'}
+              </button>
+              <button
+                onClick={send}
+                disabled={sending}
+                className="rounded bg-blue-600 px-3 py-1 text-white"
+              >
+                Send
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-      {detail && (
-        <aside className="hidden w-60 shrink-0 border-l p-4 space-y-4 overflow-y-auto md:block">
-          {detail.customer && (
-            <div>
-              <h2 className="font-semibold mb-1">Customer</h2>
-              <div className="text-sm">{detail.customer.name || detail.customer.full_name}</div>
-              <pre className="whitespace-pre-wrap text-xs mt-2">{JSON.stringify(detail.customer, null, 2)}</pre>
-            </div>
-          )}
-          {detail.property && (
-            <div>
-              <h2 className="font-semibold mb-1">Property</h2>
-              <div className="text-sm">{detail.property.name || detail.property.title}</div>
-              <pre className="whitespace-pre-wrap text-xs mt-2">{JSON.stringify(detail.property, null, 2)}</pre>
-            </div>
-          )}
-        </aside>
-      )}
-    </main>
+        {detail && (
+          <aside className="hidden w-60 shrink-0 border-l p-4 space-y-4 overflow-y-auto md:block">
+            {detail.customer && (
+              <div>
+                <h2 className="font-semibold mb-1">Customer</h2>
+                <div className="text-sm">{detail.customer.name || detail.customer.full_name}</div>
+                <pre className="whitespace-pre-wrap text-xs mt-2">{JSON.stringify(detail.customer, null, 2)}</pre>
+              </div>
+            )}
+            {detail.property && (
+              <div>
+                <h2 className="font-semibold mb-1">Property</h2>
+                <div className="text-sm">{detail.property.name || detail.property.title}</div>
+                <pre className="whitespace-pre-wrap text-xs mt-2">{JSON.stringify(detail.property, null, 2)}</pre>
+              </div>
+            )}
+          </aside>
+        )}
+      </main>
+    </div>
   );
 }

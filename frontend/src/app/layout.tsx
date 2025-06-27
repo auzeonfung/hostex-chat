@@ -24,8 +24,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     }
   }, []);
   return (
-    <html lang="en">
-      <body className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <html lang="en" className="h-full">
+      <body className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
         {children}
       </body>
     </html>
