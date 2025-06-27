@@ -17,6 +17,7 @@
     "class-variance-authority": "latest",
     "tailwindcss-animate": "latest",
     "lucide-react": "latest"
+    ,"ws": "^8.17.0"
   },
   "devDependencies": {
     "typescript": "5.4.5",
