@@ -21,6 +21,18 @@ interface ConversationDetail {
   [key: string]: any
 }
 
+const backend = process.env.NEXT_PUBLIC_BACKEND_URL || ''
+
+async function safeJSON(res: Response) {
+  const text = await res.text()
+  if (!text) return {}
+  try {
+    return JSON.parse(text)
+  } catch {
+    return { error: text }
+  }
+}
+
 export default function ChatApp() {
   const router = useRouter()
   const params = useParams()
@@ -45,7 +57,7 @@ export default function ChatApp() {
   const readRef = useRef(readState)
   const updateServerRead = useCallback(async (id: string, val: boolean) => {
     try {
-      await fetch('/api/read-state', {
+      await fetch(`${backend}/read-state`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversationId: id, read: val }),
@@ -60,6 +72,20 @@ export default function ChatApp() {
     updatesRef.current = updates
   }, [updates])
 
+  // load read/unread state so refreshing the page keeps read status
+  useEffect(() => {
+    async function loadReads() {
+      try {
+        const res = await fetch(`${backend}/read-state`)
+        const data = await safeJSON(res)
+        if (res.ok && data.readState) {
+          setReadState(data.readState)
+        }
+      } catch {}
+    }
+    loadReads()
+  }, [])
+
   useEffect(() => {
     setSelectedId(routeId ?? null)
   }, [routeId])
@@ -68,7 +94,7 @@ export default function ChatApp() {
     const id = localStorage.getItem('activeSettingId')
     if (id) {
       fetch(`/api/settings/${id}`)
-        .then((res) => res.json())
+        .then((res) => safeJSON(res))
         .then((d) => setConfig(d.setting))
         .catch(() => {})
     }
@@ -91,8 +117,8 @@ export default function ChatApp() {
     async function load() {
       setLoadingList(true)
       try {
-        const res = await fetch('/api/conversations')
-        const data = await res.json()
+        const res = await fetch(`${backend}/conversations`)
+        const data = await safeJSON(res)
         if (!res.ok || data.error) {
           setError(data.error || 'Failed to load')
           return
@@ -183,7 +209,7 @@ export default function ChatApp() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: payload, model, apiKey }),
         })
-        const data = await res.json()
+        const data = await safeJSON(res)
         if (!res.ok || data.error) {
           setError(data.error || 'Failed to generate')
         } else {
@@ -202,8 +228,8 @@ export default function ChatApp() {
     async (id: string) => {
       setLoadingDetail(true)
       try {
-        const res = await fetch(`/api/conversations/${id}`)
-        const data = await res.json()
+        const res = await fetch(`${backend}/conversations/${id}`)
+        const data = await safeJSON(res)
       if (!res.ok || data.error) {
         setError(data.error || 'Failed to load')
         setDetail(null)
@@ -265,9 +291,10 @@ export default function ChatApp() {
 
   useEffect(() => {
     // start websocket server and connect
-    fetch('/api/events').catch(() => {})
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const ws = new WebSocket(`${protocol}://${window.location.host}/api/events`)
+    fetch(`${backend}/events`).catch(() => {})
+    const proto = backend.startsWith('https') ? 'wss' : backend.startsWith('http') ? 'ws' : window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const host = backend ? backend.replace(/^https?:\/\//, '') : window.location.host
+    const ws = new WebSocket(`${proto}://${host}/events`)
     ws.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data as string)
@@ -292,28 +319,7 @@ export default function ChatApp() {
     }
   }, [selectedId, fetchDetail])
 
-  useEffect(() => {
-    const es = new EventSource('/api/read-state/events')
-    es.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data as string)
-        const id = data.conversationId
-        if (!id) return
-        setReadState((r) => ({ ...r, [id]: !!data.read }))
-        if (data.read) {
-          setUpdates((u) => {
-            const { [id]: _removed, ...rest } = u
-            return rest
-          })
-        } else {
-          setUpdates((u) => ({ ...u, [id]: true }))
-        }
-      } catch {}
-    }
-    return () => {
-      es.close()
-    }
-  }, [])
+  // the backend broadcasts updates via WebSocket so no need for SSE
 
   async function sendMessage() {
     if (!selectedId || !message.trim()) return
@@ -324,7 +330,7 @@ export default function ChatApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: message }),
       })
-      const data = await res.json()
+      const data = await safeJSON(res)
       if (!res.ok || data.error) {
         setError(data.error || 'Failed to send')
       } else {
@@ -345,7 +351,7 @@ export default function ChatApp() {
     setLoadingLogs(true)
     try {
       const res = await fetch(`/api/conversations/${selectedId}/openai-logs`)
-      const data = await res.json()
+      const data = await safeJSON(res)
       if (res.ok && Array.isArray(data.logs)) {
         setLogs(data.logs)
       } else {
@@ -415,7 +421,7 @@ export default function ChatApp() {
                     )}
                     <div ref={messagesEndRef} />
                   </div>
-                  <div className="p-4 border-t dark:bg-gray-900 sticky bottom-0 resize-y overflow-auto" style={{ minHeight: '60px' }}>
+                  <div className="p-4 border-t dark:bg-gray-900 sticky bottom-0" style={{ minHeight: '60px' }}>
                     <div className="flex items-end space-x-2">
                       <Textarea
                         className="flex-1 resize-y min-h-[40px]"

@@ -11,12 +11,17 @@ export interface Message {
   } | null;
 }
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { Button } from './ui/button'
 import { Download, Clipboard } from 'lucide-react'
 
 export default function MessageBubble({ message }: { message: Message }) {
   const isHost = message.sender_role === 'host'
+  const [expanded, setExpanded] = useState(false)
+  const MAX_CHARS = 400
+  const content = message.content || ''
+  const isLong = content.length > MAX_CHARS
+  const displayed = !expanded && isLong ? content.slice(0, MAX_CHARS) + '…' : content
 
   const copyImage = useCallback(async (url: string) => {
     try {
@@ -51,21 +56,38 @@ export default function MessageBubble({ message }: { message: Message }) {
               >
                 <Clipboard className="w-4 h-4" />
               </Button>
-              <Button
-                asChild
-                variant="secondary"
-                size="sm"
-                aria-label="Download"
-              >
+              <Button asChild variant="secondary" size="sm" aria-label="Download">
                 <a href={message.attachment.fullback_url} download>
                   <Download className="w-4 h-4" />
                 </a>
               </Button>
             </div>
-            {message.content && <div>{message.content}</div>}
+            {content && (
+              <div>
+                {displayed}
+                {isLong && (
+                  <button
+                    className="block text-xs underline text-blue-700 ml-1"
+                    onClick={() => setExpanded(!expanded)}
+                  >
+                    {expanded ? 'Show less' : 'Show more'}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         ) : (
-          <>{message.content}</>
+          <>
+            {displayed}
+            {isLong && (
+              <button
+                className="block text-xs underline text-blue-700 ml-1"
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? 'Show less' : 'Show more'}
+              </button>
+            )}
+          </>
         )}
         {message.created_at && (
           <div className="mt-1 text-xs opacity-70 text-right">
