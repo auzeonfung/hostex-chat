@@ -88,6 +88,7 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, data: payload }),
       })
+      localStorage.setItem("activeSettingId", selected)
     } else {
       const res = await fetch("/api/settings", {
         method: "POST",
@@ -95,10 +96,11 @@ export default function SettingsPage() {
         body: JSON.stringify({ name: name || "Default", data: payload }),
       })
       const data = await res.json()
-      setSelected(data.setting.id)
+      const newId = data.setting.id
+      setSelected(newId)
+      localStorage.setItem("activeSettingId", newId)
     }
     await load()
-    localStorage.setItem("activeSettingId", selected || "")
     alert("Saved")
   }
 
