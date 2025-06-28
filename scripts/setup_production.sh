@@ -104,7 +104,7 @@ After=network.target
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=$APP_DIR
+WorkingDirectory=$APP_DIR/frontend
 ExecStart=/usr/bin/node $APP_DIR/scripts/webhook-worker.js
 Restart=always
 Environment=NODE_ENV=production
