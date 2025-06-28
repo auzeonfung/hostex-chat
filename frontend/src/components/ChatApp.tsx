@@ -23,6 +23,16 @@ interface ConversationDetail {
 
 const backend = process.env.NEXT_PUBLIC_BACKEND_URL || ''
 
+async function safeJSON(res: Response) {
+  const text = await res.text()
+  if (!text) return {}
+  try {
+    return JSON.parse(text)
+  } catch {
+    return { error: text }
+  }
+}
+
 export default function ChatApp() {
   const router = useRouter()
   const params = useParams()
@@ -67,7 +77,7 @@ export default function ChatApp() {
     async function loadReads() {
       try {
         const res = await fetch(`${backend}/read-state`)
-        const data = await res.json()
+        const data = await safeJSON(res)
         if (res.ok && data.readState) {
           setReadState(data.readState)
         }
@@ -84,7 +94,7 @@ export default function ChatApp() {
     const id = localStorage.getItem('activeSettingId')
     if (id) {
       fetch(`/api/settings/${id}`)
-        .then((res) => res.json())
+        .then((res) => safeJSON(res))
         .then((d) => setConfig(d.setting))
         .catch(() => {})
     }
@@ -108,7 +118,7 @@ export default function ChatApp() {
       setLoadingList(true)
       try {
         const res = await fetch(`${backend}/conversations`)
-        const data = await res.json()
+        const data = await safeJSON(res)
         if (!res.ok || data.error) {
           setError(data.error || 'Failed to load')
           return
@@ -199,7 +209,7 @@ export default function ChatApp() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: payload, model, apiKey }),
         })
-        const data = await res.json()
+        const data = await safeJSON(res)
         if (!res.ok || data.error) {
           setError(data.error || 'Failed to generate')
         } else {
@@ -219,7 +229,7 @@ export default function ChatApp() {
       setLoadingDetail(true)
       try {
         const res = await fetch(`${backend}/conversations/${id}`)
-        const data = await res.json()
+        const data = await safeJSON(res)
       if (!res.ok || data.error) {
         setError(data.error || 'Failed to load')
         setDetail(null)
@@ -320,7 +330,7 @@ export default function ChatApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: message }),
       })
-      const data = await res.json()
+      const data = await safeJSON(res)
       if (!res.ok || data.error) {
         setError(data.error || 'Failed to send')
       } else {
@@ -341,7 +351,7 @@ export default function ChatApp() {
     setLoadingLogs(true)
     try {
       const res = await fetch(`/api/conversations/${selectedId}/openai-logs`)
-      const data = await res.json()
+      const data = await safeJSON(res)
       if (res.ok && Array.isArray(data.logs)) {
         setLogs(data.logs)
       } else {
