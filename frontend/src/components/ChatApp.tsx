@@ -40,6 +40,7 @@ export default function ChatApp() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const [updates, setUpdates] = useState<Record<string, boolean>>({})
   const [readState, setReadState] = useState<Record<string, boolean>>({})
+  const [config, setConfig] = useState<any>(null)
   const readRef = useRef(readState)
   const updateServerRead = useCallback(async (id: string, val: boolean) => {
     try {
@@ -61,6 +62,25 @@ export default function ChatApp() {
   useEffect(() => {
     setSelectedId(routeId ?? null)
   }, [routeId])
+
+  useEffect(() => {
+    const id = localStorage.getItem('activeSettingId')
+    if (id) {
+      fetch(`/api/settings/${id}`)
+        .then((res) => res.json())
+        .then((d) => setConfig(d.setting))
+        .catch(() => {})
+    }
+  }, [])
+
+  useEffect(() => {
+    const theme = config?.data?.theme || 'system'
+    if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [config])
 
   useEffect(() => {
     const stored = localStorage.getItem('readState')
@@ -154,7 +174,7 @@ export default function ChatApp() {
 
   const generateReply = useCallback(
     async (msgs: { sender_role?: string; content: string }[]) => {
-      const settings = JSON.parse(localStorage.getItem('settings') || '{}')
+      const settings = config?.data || {}
       const apiKey = settings.apiKey
       const model = settings.model || 'gpt-3.5-turbo'
       const prompt = settings.prompt
@@ -230,7 +250,7 @@ export default function ChatApp() {
         setReadState((r) => ({ ...r, [id]: true }))
         updateServerRead(id, true)
 
-        if (ordered) {
+        if (ordered && config?.data?.autoReply) {
           generateReply(ordered)
         }
         console.log('Loaded conversation detail', {
@@ -335,7 +355,10 @@ export default function ChatApp() {
     <div className="flex-1 flex flex-col overflow-hidden w-full h-full">
       <Header />
       <main className="flex flex-1 divide-x overflow-hidden h-full">
-        <aside className="w-72 flex flex-col border-r overflow-hidden">
+        <aside
+          className="w-72 flex flex-col border-r overflow-hidden resize-x"
+          style={{ minWidth: '200px', maxWidth: '600px' }}
+        >
           {loadingList ? (
             <p className="p-4">Loading...</p>
           ) : error ? (
@@ -384,7 +407,7 @@ export default function ChatApp() {
                     )}
                     <div ref={messagesEndRef} />
                   </div>
-                  <div className="p-4 border-t dark:bg-gray-900 sticky bottom-0">
+                  <div className="p-4 border-t dark:bg-gray-900 sticky bottom-0 resize-y overflow-auto" style={{ minHeight: '60px' }}>
                     <div className="flex items-end space-x-2">
                       <Textarea
                         className="flex-1 resize-y min-h-[40px]"
@@ -431,7 +454,10 @@ export default function ChatApp() {
             )}
           </div>
           {detail && (
-            <aside className="hidden w-60 shrink-0 border-l p-4 space-y-4 overflow-y-auto md:block">
+            <aside
+              className="hidden w-60 shrink-0 border-l p-4 space-y-4 overflow-y-auto md:block resize-x"
+              style={{ minWidth: '180px', maxWidth: '400px' }}
+            >
               {detail.customer && (
                 <div>
                   <h2 className="font-semibold mb-1">Customer</h2>
