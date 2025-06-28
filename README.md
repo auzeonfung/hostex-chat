@@ -14,6 +14,12 @@ This project integrates Hostex conversations with ChatGPT, offering a web-based 
    ```bash
    npm run dev
    ```
+4. In a separate terminal start the backend polling server:
+   ```bash
+   cd ../backend
+   npm install
+   npm start
+   ```
 
 The application stores data in a SQLite database file created in the
 `frontend/` directory as `frontend/db.sqlite` when the server runs. This file is
@@ -36,19 +42,25 @@ Edit `frontend/.env` and set the following variables:
 - `OPENAI_API_KEY` – OpenAI API key for generating replies.
 - `HOSTEX_API_BASE` – optional Hostex API endpoint, defaults to
   `https://api.hostex.io/v3`.
+- `NEXT_PUBLIC_BACKEND_URL` – URL for the backend server used by the frontend.
 
 These settings are required both for development and when deploying to
-production using `scripts/setup_production.sh`.
+production using `scripts/setup_full_production.sh`.
 
 ## API Routes
 
-- `GET /api/conversations` – fetches Hostex conversations from the last 7 days.
-- `GET /api/conversations/:id` – retrieves details for a specific conversation.
+The backend server polls Hostex and stores data in `db.sqlite`. It exposes the following routes on `NEXT_PUBLIC_BACKEND_URL`:
+
+- `GET /conversations` – list cached conversations.
+- `GET /conversations/:id` – conversation detail with messages.
+- `GET /read-state` – list read state information.
+- `POST /read-state` – update read state.
+
+The Next.js frontend still provides routes for ChatGPT features:
 - `GET /api/conversations/:id/replies` – list stored ChatGPT replies for a conversation.
 - `POST /api/conversations/:id/replies` – generate a new reply using ChatGPT and store it.
 - `POST /api/conversations/:id/send` – send a stored reply via the Hostex API.
-- `POST /api/webhook/hostex` – receive Hostex webhook events verified with
-  `HOSTEX_API_TOKEN` and persist new message events in `db.sqlite`.
+- `POST /api/webhook/hostex` – receive Hostex webhook events verified with `HOSTEX_API_TOKEN`.
 
 Generated replies can be edited before sending on the conversation detail page.
 
@@ -107,9 +119,9 @@ point to `/api/webhook/hostex` as nginx proxies this path to the worker.
 ## Production Deployment
 
 To run Hostex Chat on a public Ubuntu server you can use the helper script in
-`scripts/setup_production.sh`. It installs Node.js 22 LTS and Nginx, builds the
-Next.js app and sets up a systemd service. Nginx is configured to proxy traffic
-on port 80/443 to the Node.js server running on port 3000. The server expects an
+`scripts/setup_full_production.sh`. It installs Node.js 22 LTS and Nginx, builds the
+frontend and backend and sets up systemd services. Nginx is configured to proxy traffic
+on port 80/443 to the Node.js servers running on ports 3000 and 4000. The server expects an
 existing certificate in `/root/cert` named after the base domain, for example a
 domain of `abc.ox.ci` should have `/root/cert/ox.ci.pem` and
 `/root/cert/ox.ci.key`. HTTP traffic is redirected to HTTPS. An additional timer
@@ -123,8 +135,11 @@ so requests can be verified. The worker is started automatically but you can
 restart it with `systemctl restart hostex-chat-worker.service` when updating the
 code.
 
+A sample nginx configuration suitable for Cloudflare is included at
+`nginx/hostex-chat-cloudflare.conf`.
+
 ```bash
-DOMAIN=example.com sudo ./scripts/setup_production.sh
+DOMAIN=example.com sudo ./scripts/setup_full_production.sh
 ```
 
 Specify your domain via the `DOMAIN` environment variable when running the

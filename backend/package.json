@@ -1,0 +1,15 @@
+{
+  "name": "hostex-chat-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.17.0",
+    "better-sqlite3": "^9.4.1",
+    "node-fetch": "^3.3.2"
+  }
+}
