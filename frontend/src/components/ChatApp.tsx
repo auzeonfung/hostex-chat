@@ -83,20 +83,9 @@ export default function ChatApp() {
     }
   }, [config])
 
-  useEffect(() => {
-    const stored = localStorage.getItem('readState')
-    if (stored) {
-      try {
-        setReadState(JSON.parse(stored))
-      } catch {
-        // ignore parse error
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem('readState', JSON.stringify(readState))
-  }, [readState])
+  // readState is initialized from the server response when loading
+  // conversations. Local updates are kept in memory and persisted via
+  // `/api/read-state` so the state is shared across devices.
 
   useEffect(() => {
     async function load() {
