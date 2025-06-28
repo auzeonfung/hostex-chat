@@ -1,5 +1,6 @@
 'use client';
 import { Button } from './ui/button'
+import { cn } from '@/lib/utils'
 
 interface Props {
   conv: any;
@@ -12,10 +13,11 @@ interface Props {
 function getCustomerName(conv: any) {
   return (
     conv.customer?.name ||
+    conv.customer?.full_name ||
     conv.customer_name ||
     conv.name ||
     conv.subject ||
-    conv.id
+    'Unknown'
   );
 }
 
@@ -73,13 +75,12 @@ export default function ConversationItem({ conv, selected, hasUpdate, unread, on
   return (
     <li>
       <Button
-        className={`w-full text-left border p-2 hover:bg-gray-50 dark:hover:bg-gray-800 h-auto ${
-          selected
-            ? 'bg-gray-200 dark:bg-gray-800'
-            : unread
-            ? 'bg-blue-100 dark:bg-blue-900'
-            : 'dark:bg-gray-700'
-        } ${hasUpdate || unread ? 'border-blue-500' : ''} ${hasUpdate ? 'border-blue-800' : ''}`}
+        className={cn(
+          'w-full text-left h-auto border',
+          selected ? 'bg-muted' : unread ? 'bg-primary/10' : '',
+          hasUpdate || unread ? 'border-blue-500' : '',
+          hasUpdate ? 'border-blue-800' : ''
+        )}
         onClick={onClick}
         variant="secondary"
         size="default"
