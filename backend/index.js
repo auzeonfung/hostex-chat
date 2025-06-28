@@ -1,11 +1,13 @@
 import express from 'express';
 import http from 'http';
 import { WebSocketServer } from 'ws';
+import cors from 'cors';
 import { listConversations, listConversation, listMessages, listReadState, setReadState } from './db.js';
 import { addClient, removeClient, broadcast } from './events.js';
 import { startPolling } from './poller.js';
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 app.get('/conversations', async (_req, res) => {

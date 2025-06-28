@@ -1,7 +1,8 @@
 import Database from 'better-sqlite3';
-import path from 'path';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
-const DB_PATH = path.join(process.cwd(), 'db.sqlite');
+const DB_PATH = process.env.DB_PATH || join(dirname(fileURLToPath(import.meta.url)), '..', 'db.sqlite');
 const db = new Database(DB_PATH);
 
 db.exec(`

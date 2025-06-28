@@ -43,6 +43,7 @@ Edit `frontend/.env` and set the following variables:
 - `HOSTEX_API_BASE` – optional Hostex API endpoint, defaults to
   `https://api.hostex.io/v3`.
 - `NEXT_PUBLIC_BACKEND_URL` – URL for the backend server used by the frontend.
+- `DB_PATH` – optional path for the SQLite database used by the backend.
 
 These settings are required both for development and when deploying to
 production using `scripts/setup_full_production.sh`.

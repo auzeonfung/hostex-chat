@@ -136,3 +136,4 @@ dist
 .pnp.*
 pnpm-lock.yaml
 db.sqlite
+tests/build
