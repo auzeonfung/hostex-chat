@@ -141,7 +141,7 @@ export default function ChatApp() {
     load()
     const id = setInterval(load, 30000)
     return () => clearInterval(id)
-  }, [selectedId])
+  }, [])
 
   const orderMessages = useCallback((messages?: Message[]) => {
     if (!Array.isArray(messages)) return messages
@@ -416,7 +416,7 @@ export default function ChatApp() {
                     </div>
                     </div>
                   {loadingDetail && (
-                    <div className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 flex items-center justify-center">
+                    <div className="absolute top-2 right-2 text-xs text-gray-500">
                       Loading...
                     </div>
                   )}
