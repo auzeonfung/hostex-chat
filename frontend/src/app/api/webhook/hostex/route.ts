@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { addWebhookEvent, setReadState } from '@/lib/db';
 import { broadcast } from '@/lib/events';
+import { broadcastReadState } from '@/lib/readStateEvents';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
       payload.conversation_id || payload.data?.conversation_id || payload.data?.conversationId;
     if (conversationId) {
       await setReadState(conversationId, false);
+      broadcastReadState({ conversationId, read: false });
       const event = await addWebhookEvent({ type, conversationId, payload });
       broadcast({ conversationId, message: event.payload?.data || event.payload });
       console.log('Webhook event processed', { type, conversationId });
