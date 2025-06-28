@@ -160,7 +160,7 @@ export default function SettingsPage() {
               </SelectTrigger>
               <SelectContent>
                 {loadingModels && (
-                  <SelectItem value="" disabled>
+                  <SelectItem value="loading" disabled>
                     Loading...
                   </SelectItem>
                 )}
