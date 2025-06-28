@@ -134,7 +134,7 @@ export default function ChatApp() {
             const newLast = (conv.last_message || conv.lastMessage || {}).created_at
             const oldLast = old ? (old.last_message || old.lastMessage || {}).created_at : undefined
             if (!old) {
-              if (!(conv.id in newReads)) newReads[conv.id] = false
+              // don't override read state when first loading conversations
               newUpdates[conv.id] = true
             } else if (newLast && oldLast && new Date(newLast).getTime() > new Date(oldLast).getTime()) {
               if (conv.id !== selectedId) {
@@ -308,6 +308,29 @@ export default function ChatApp() {
       ws.close()
     }
   }, [selectedId, fetchDetail])
+
+  useEffect(() => {
+    const es = new EventSource('/api/read-state/events')
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        const id = data.conversationId
+        if (!id) return
+        setReadState((r) => ({ ...r, [id]: !!data.read }))
+        if (data.read) {
+          setUpdates((u) => {
+            const { [id]: _removed, ...rest } = u
+            return rest
+          })
+        } else {
+          setUpdates((u) => ({ ...u, [id]: true }))
+        }
+      } catch {}
+    }
+    return () => {
+      es.close()
+    }
+  }, [])
 
   async function sendMessage() {
     if (!selectedId || !message.trim()) return
