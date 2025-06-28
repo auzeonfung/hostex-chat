@@ -81,6 +81,9 @@ dashboard with the following settings:
 Webhook payloads are stored in `db.sqlite` and broadcast to connected clients via
 Server‑Sent Events.
 
+When running the standalone webhook worker (see below) the URL should still
+point to `/api/webhook/hostex` as nginx proxies this path to the worker.
+
 ## Production Deployment
 
 To run Hostex Chat on a public Ubuntu server you can use the helper script in
@@ -92,6 +95,14 @@ domain of `abc.ox.ci` should have `/root/cert/ox.ci.pem` and
 `/root/cert/ox.ci.key`. HTTP traffic is redirected to HTTPS. An additional timer
 checks the GitHub repository for updates, pulls the `main` branch, rebuilds and
 restarts the service when changes are detected.
+
+The script also compiles `scripts/webhook-worker.ts` and installs a
+`hostex-chat-worker.service` which listens on port 3100 for webhook events. Nginx
+forwards `/api/webhook/hostex` to this worker. Ensure `HOSTEX_API_TOKEN` is set
+so requests can be verified. The worker is started automatically but you can
+restart it with `systemctl restart hostex-chat-worker.service` when updating the
+code. The included update timer recompiles the worker and reloads systemd so the
+service picks up any changes automatically.
 
 ```bash
 DOMAIN=example.com sudo ./scripts/setup_production.sh
