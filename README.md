@@ -46,7 +46,8 @@ Edit `frontend/.env` and set the following variables:
 - `DB_PATH` – optional path for the SQLite database used by the backend.
 
 These settings are required both for development and when deploying to
-production using `scripts/setup_full_production.sh`.
+production using `scripts/setup_full_production.sh` or
+`scripts/setup_local_production.sh`.
 
 ## API Routes
 
@@ -143,9 +144,15 @@ A sample nginx configuration suitable for Cloudflare is included at
 DOMAIN=example.com sudo ./scripts/setup_full_production.sh
 ```
 
-Run the script from a local checkout so any unpushed changes are deployed. To
-deploy from a different repository, set the `REPO_URL` environment variable to
-the desired Git URL.
+To deploy from your current directory without cloning, use
+`scripts/setup_local_production.sh` instead:
+
+```bash
+DOMAIN=example.com sudo ./scripts/setup_local_production.sh
+```
+
+When using `setup_full_production.sh` you can set the `REPO_URL` environment
+variable to clone from a different repository.
 
 Specify your domain via the `DOMAIN` environment variable when running the
 script. Ensure the matching certificate and key exist in `/root/cert` before
