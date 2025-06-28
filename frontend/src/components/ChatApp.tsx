@@ -7,6 +7,7 @@ import ConversationItem from './ConversationItem'
 import MessageBubble, { Message } from './MessageBubble'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
+import { Separator } from './ui/separator'
 import { Sparkles, Send as SendIcon, FileText } from 'lucide-react'
 
 interface Conversation {
@@ -354,9 +355,9 @@ export default function ChatApp() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden w-full h-full">
       <Header />
-      <main className="flex flex-1 divide-x overflow-hidden h-full">
+      <main className="flex flex-1 overflow-hidden h-full">
         <aside
-          className="w-72 flex flex-col border-r overflow-hidden resize-x"
+          className="w-72 flex flex-col overflow-hidden resize-x"
           style={{ minWidth: '200px', maxWidth: '600px' }}
         >
           {loadingList ? (
@@ -387,6 +388,7 @@ export default function ChatApp() {
             </ul>
           )}
         </aside>
+        <Separator orientation="vertical" />
         <section className="flex-1 flex overflow-hidden">
           <div className="flex-1 flex flex-col overflow-hidden">
             {selectedId ? (
@@ -454,10 +456,12 @@ export default function ChatApp() {
             )}
           </div>
           {detail && (
-            <aside
-              className="hidden w-60 shrink-0 border-l p-4 space-y-4 overflow-y-auto md:block resize-x"
-              style={{ minWidth: '180px', maxWidth: '400px' }}
-            >
+            <>
+              <Separator orientation="vertical" />
+              <aside
+                className="hidden w-60 shrink-0 p-4 space-y-4 overflow-y-auto md:block resize-x"
+                style={{ minWidth: '180px', maxWidth: '400px' }}
+              >
               {detail.customer && (
                 <div>
                   <h2 className="font-semibold mb-1">Customer</h2>
@@ -477,7 +481,8 @@ export default function ChatApp() {
                   <pre className="whitespace-pre-wrap text-xs mt-2">{JSON.stringify(detail.property, null, 2)}</pre>
                 </div>
               )}
-            </aside>
+              </aside>
+            </>
           )}
         </section>
       </main>
