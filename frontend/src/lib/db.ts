@@ -25,6 +25,14 @@ export interface OpenAILog {
   createdAt: string;
 }
 
+export interface Setting {
+  id: string;
+  name: string;
+  data: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const DB_PATH = path.join(process.cwd(), 'db.sqlite');
 const db = new Database(DB_PATH);
 
@@ -48,6 +56,17 @@ db.exec(`
     conversation_id TEXT,
     payload TEXT,
     created_at TEXT
+  );
+  CREATE TABLE IF NOT EXISTS read_state (
+    conversation_id TEXT PRIMARY KEY,
+    is_read INTEGER
+  );
+  CREATE TABLE IF NOT EXISTS settings (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    data TEXT,
+    created_at TEXT,
+    updated_at TEXT
   );
 `);
 
@@ -144,4 +163,62 @@ export async function listOpenAILogs(
     ...r,
     payload: JSON.parse(r.payload),
   }));
+}
+
+export async function setReadState(conversationId: string, isRead: boolean) {
+  await run(
+    `INSERT INTO read_state (conversation_id, is_read)
+     VALUES (?, ?)
+     ON CONFLICT(conversation_id) DO UPDATE SET is_read=excluded.is_read`,
+    [conversationId, isRead ? 1 : 0]
+  );
+}
+
+export async function listReadState(): Promise<Record<string, boolean>> {
+  const rows = await run(
+    `SELECT conversation_id as conversationId, is_read as isRead FROM read_state`
+  );
+  const result: Record<string, boolean> = {};
+  for (const r of rows) {
+    result[r.conversationId] = !!r.isRead;
+  }
+  return result;
+}
+
+export async function listSettings(): Promise<Setting[]> {
+  const rows = await run(
+    `SELECT id, name, data, created_at as createdAt, updated_at as updatedAt FROM settings`
+  );
+  return rows.map((r: any) => ({ ...r, data: JSON.parse(r.data) }));
+}
+
+export async function getSetting(id: string): Promise<Setting | undefined> {
+  const rows = await run(
+    `SELECT id, name, data, created_at as createdAt, updated_at as updatedAt FROM settings WHERE id=?`,
+    [id]
+  );
+  const r = rows[0];
+  return r ? { ...r, data: JSON.parse(r.data) } : undefined;
+}
+
+export async function addSetting(name: string, data: any): Promise<Setting> {
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  await run(
+    `INSERT INTO settings (id, name, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
+    [id, name, JSON.stringify(data), now, now]
+  );
+  return { id, name, data, createdAt: now, updatedAt: now };
+}
+
+export async function updateSetting(id: string, name: string, data: any) {
+  const now = new Date().toISOString();
+  await run(
+    `UPDATE settings SET name=?, data=?, updated_at=? WHERE id=?`,
+    [name, JSON.stringify(data), now, id]
+  );
+}
+
+export async function deleteSetting(id: string) {
+  await run(`DELETE FROM settings WHERE id=?`, [id]);
 }

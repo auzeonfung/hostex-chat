@@ -1,0 +1,23 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getSetting, updateSetting, deleteSetting } from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const setting = await getSetting(params.id)
+  if (!setting) return NextResponse.json({ error: 'not found' }, { status: 404 })
+  return NextResponse.json({ setting })
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const { name, data } = await req.json()
+  if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 })
+  await updateSetting(params.id, name, data || {})
+  return NextResponse.json({ status: 'ok' })
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  await deleteSetting(params.id)
+  return NextResponse.json({ status: 'ok' })
+}

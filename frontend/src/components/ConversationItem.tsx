@@ -1,5 +1,6 @@
 'use client';
 import { Button } from './ui/button'
+import { cn } from '@/lib/utils'
 
 interface Props {
   conv: any;
@@ -12,10 +13,11 @@ interface Props {
 function getCustomerName(conv: any) {
   return (
     conv.customer?.name ||
+    conv.customer?.full_name ||
     conv.customer_name ||
     conv.name ||
     conv.subject ||
-    conv.id
+    'Unknown'
   );
 }
 
@@ -51,22 +53,34 @@ function preview(content?: string) {
   return line.length > 50 ? line.slice(0, 50) + '...' : line;
 }
 
-function formatTime(ts?: string) {
-  if (!ts) return '';
-  return new Date(ts).toLocaleString();
+function relativeTime(ts?: string) {
+  if (!ts) return ''
+  const diff = Date.now() - new Date(ts).getTime()
+  const s = Math.floor(diff / 1000)
+  if (s < 60) return `${s}s ago`
+  const m = Math.floor(s / 60)
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  const d = Math.floor(h / 24)
+  return `${d}d ago`
+}
+
+function needsReply(conv: any) {
+  const last = getLastMessage(conv)
+  return last && last.sender_role !== 'host'
 }
 
 export default function ConversationItem({ conv, selected, hasUpdate, unread, onClick }: Props) {
   return (
     <li>
       <Button
-        className={`w-full text-left border p-2 hover:bg-gray-50 dark:hover:bg-gray-800 h-auto ${
-          selected
-            ? 'bg-gray-100 dark:bg-gray-800'
-            : unread
-            ? 'bg-blue-50 dark:bg-gray-700'
-            : 'dark:bg-gray-700'
-        } ${hasUpdate || unread ? 'border-blue-500' : ''} ${hasUpdate ? 'border-blue-800' : ''}`}
+        className={cn(
+          'w-full text-left h-auto border',
+          selected ? 'bg-muted' : unread ? 'bg-primary/10' : '',
+          hasUpdate || unread ? 'border-blue-500' : '',
+          hasUpdate ? 'border-blue-800' : ''
+        )}
         onClick={onClick}
         variant="secondary"
         size="default"
@@ -90,13 +104,16 @@ export default function ConversationItem({ conv, selected, hasUpdate, unread, on
           </div>
           <div className="text-right pl-2">
             <div className="text-xs text-gray-500 whitespace-nowrap">
-              {formatTime(
+              {relativeTime(
                 getLastMessage(conv)?.created_at ||
                 getLastMessage(conv)?.createdAt
               )}
             </div>
             {(hasUpdate || unread) && (
               <span className="ml-2 mt-1 inline-block h-2 w-2 rounded-full bg-blue-500" />
+            )}
+            {needsReply(conv) && (
+              <span className="ml-1 mt-1 inline-block h-2 w-2 rounded-full bg-red-500" title="Reply needed" />
             )}
           </div>
         </div>
