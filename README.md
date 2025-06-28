@@ -143,6 +143,10 @@ A sample nginx configuration suitable for Cloudflare is included at
 DOMAIN=example.com sudo ./scripts/setup_full_production.sh
 ```
 
+Run the script from a local checkout so any unpushed changes are deployed. To
+deploy from a different repository, set the `REPO_URL` environment variable to
+the desired Git URL.
+
 Specify your domain via the `DOMAIN` environment variable when running the
 script. Ensure the matching certificate and key exist in `/root/cert` before
 executing the script. After it completes the application will be available over

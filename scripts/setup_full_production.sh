@@ -8,7 +8,8 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 APP_DIR=/opt/hostex-chat
-REPO_URL="https://github.com/auzeonfung/hostex-chat.git"
+# Clone from the current directory by default so local changes are deployed.
+REPO_URL="${REPO_URL:-$PWD}"
 NODE_VERSION=22
 
 # DOMAIN must be provided via environment variables
@@ -31,6 +32,7 @@ curl -fsSL https://deb.nodesource.com/setup_$NODE_VERSION.x | bash -
 apt-get install -y nodejs
 
 # clone or update application code
+mkdir -p "$APP_DIR"
 if [ ! -d "$APP_DIR/.git" ]; then
   git clone "$REPO_URL" "$APP_DIR"
 else
@@ -57,7 +59,9 @@ cat >/usr/local/bin/hostex-chat-update.sh <<'UPDATE'
 #!/usr/bin/env bash
 set -e
 APP_DIR=/opt/hostex-chat
+REPO_URL="${REPO_URL:-https://github.com/auzeonfung/hostex-chat.git}"
 cd "$APP_DIR"
+git remote set-url origin "$REPO_URL"
 git fetch origin
 LOCAL=$(git rev-parse @)
 REMOTE=$(git rev-parse origin/main)
