@@ -310,10 +310,12 @@ export default function ChatApp() {
   }, [selectedId, fetchDetail])
 
   useEffect(() => {
-    const es = new EventSource('/api/read-state/events')
-    es.onmessage = (e) => {
+    fetch('/api/read-state-events').catch(() => {})
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const ws = new WebSocket(`${protocol}://${window.location.host}/api/read-state-events`)
+    ws.onmessage = (e) => {
       try {
-        const data = JSON.parse(e.data)
+        const data = JSON.parse(e.data as string)
         const id = data.conversationId
         if (!id) return
         setReadState((r) => ({ ...r, [id]: !!data.read }))
@@ -328,7 +330,7 @@ export default function ChatApp() {
       } catch {}
     }
     return () => {
-      es.close()
+      ws.close()
     }
   }, [])
 
