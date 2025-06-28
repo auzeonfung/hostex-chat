@@ -134,7 +134,7 @@ export default function ChatApp() {
             const newLast = (conv.last_message || conv.lastMessage || {}).created_at
             const oldLast = old ? (old.last_message || old.lastMessage || {}).created_at : undefined
             if (!old) {
-              if (!(conv.id in newReads)) newReads[conv.id] = false
+              // don't override read state when first loading conversations
               newUpdates[conv.id] = true
             } else if (newLast && oldLast && new Date(newLast).getTime() > new Date(oldLast).getTime()) {
               if (conv.id !== selectedId) {
