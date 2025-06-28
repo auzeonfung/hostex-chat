@@ -41,6 +41,15 @@ export default function ChatApp() {
   const [updates, setUpdates] = useState<Record<string, boolean>>({})
   const [readState, setReadState] = useState<Record<string, boolean>>({})
   const readRef = useRef(readState)
+  const updateServerRead = useCallback(async (id: string, val: boolean) => {
+    try {
+      await fetch('/api/read-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: id, read: val }),
+      })
+    } catch {}
+  }, [])
   useEffect(() => {
     readRef.current = readState
   }, [readState])
@@ -62,6 +71,14 @@ export default function ChatApp() {
         // ignore parse error
       }
     }
+    fetch('/api/read-state')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.readState) {
+          setReadState((r) => ({ ...r, ...data.readState }))
+        }
+      })
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -211,6 +228,7 @@ export default function ChatApp() {
         })
 
         setReadState((r) => ({ ...r, [id]: true }))
+        updateServerRead(id, true)
 
         if (ordered) {
           generateReply(ordered)
@@ -254,10 +272,12 @@ export default function ChatApp() {
         if (id === selectedId) {
           fetchDetail(id)
           setReadState((r) => ({ ...r, [id]: true }))
+          updateServerRead(id, true)
           console.log('WS update for conversation', id, data)
         } else {
           setUpdates((u) => ({ ...u, [id]: true }))
           setReadState((r) => ({ ...r, [id]: false }))
+          updateServerRead(id, false)
         }
       } catch {
         // ignore JSON parse errors
@@ -333,6 +353,7 @@ export default function ChatApp() {
                     router.push(`/chat/${conv.id}`)
                     setSelectedId(conv.id)
                     setReadState((r) => ({ ...r, [conv.id]: true }))
+                    updateServerRead(conv.id, true)
                     setUpdates((u) => {
                       const { [conv.id]: _removed, ...rest } = u
                       return rest

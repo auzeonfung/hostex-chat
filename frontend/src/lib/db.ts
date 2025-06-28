@@ -49,6 +49,10 @@ db.exec(`
     payload TEXT,
     created_at TEXT
   );
+  CREATE TABLE IF NOT EXISTS read_state (
+    conversation_id TEXT PRIMARY KEY,
+    is_read INTEGER
+  );
 `);
 
 function log(sql: string, params: any[]) {
@@ -144,4 +148,24 @@ export async function listOpenAILogs(
     ...r,
     payload: JSON.parse(r.payload),
   }));
+}
+
+export async function setReadState(conversationId: string, isRead: boolean) {
+  await run(
+    `INSERT INTO read_state (conversation_id, is_read)
+     VALUES (?, ?)
+     ON CONFLICT(conversation_id) DO UPDATE SET is_read=excluded.is_read`,
+    [conversationId, isRead ? 1 : 0]
+  );
+}
+
+export async function listReadState(): Promise<Record<string, boolean>> {
+  const rows = await run(
+    `SELECT conversation_id as conversationId, is_read as isRead FROM read_state`
+  );
+  const result: Record<string, boolean> = {};
+  for (const r of rows) {
+    result[r.conversationId] = !!r.isRead;
+  }
+  return result;
 }
