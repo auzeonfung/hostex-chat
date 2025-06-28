@@ -4,14 +4,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Toggle } from "@/components/ui/toggle";
 
 interface Setting {
   id: string;
@@ -152,51 +144,30 @@ export default function SettingsPage() {
             <span className="font-medium">OpenAI API Key</span>
             <Input type="password" className="mt-1 w-full" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
           </label>
-          <label className="block space-y-1">
+          <label className="block">
             <span className="font-medium">Model</span>
-            <Select value={model} onValueChange={(val) => setModel(val)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select model" />
-              </SelectTrigger>
-              <SelectContent>
-                {loadingModels && (
-                  <SelectItem value="" disabled>
-                    Loading...
-                  </SelectItem>
-                )}
-                {models.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select className="mt-1 w-full rounded border p-2" value={model} onChange={(e) => setModel(e.target.value)}>
+              {loadingModels && <option>Loading...</option>}
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>{m.id}</option>
+              ))}
+            </select>
           </label>
           <label className="block">
             <span className="font-medium">System Prompt</span>
             <Textarea className="mt-1 w-full" rows={3} value={prompt} onChange={(e) => setPrompt(e.target.value)} />
           </label>
-          <div className="flex items-center space-x-2">
-            <Toggle
-              pressed={autoReply}
-              onPressedChange={(val) => setAutoReply(val)}
-              aria-label="Auto generate reply"
-            >
-              Auto generate reply
-            </Toggle>
-          </div>
-          <label className="block space-y-1">
+          <label className="flex items-center space-x-2">
+            <input type="checkbox" checked={autoReply} onChange={(e) => setAutoReply(e.target.checked)} />
+            <span>Auto generate reply</span>
+          </label>
+          <label className="block">
             <span className="font-medium">Theme</span>
-            <Select value={theme} onValueChange={(val) => setTheme(val)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select theme" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="system">System</SelectItem>
-              </SelectContent>
-            </Select>
+            <select className="mt-1 w-full rounded border p-2" value={theme} onChange={(e) => setTheme(e.target.value)}>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="system">System</option>
+            </select>
           </label>
           <div className="space-x-2">
             <Button onClick={save}>Save</Button>
