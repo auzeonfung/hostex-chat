@@ -20,6 +20,26 @@ The application stores data in a SQLite database file created in the
 already excluded by `.gitignore` inside `frontend/`. Installing the
 dependencies will automatically provide the required SQLite driver.
 
+## Configuration
+
+Environment variables are loaded from a `.env` file in the `frontend/`
+directory. Create the file if it does not exist by copying the example
+template:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+Edit `frontend/.env` and set the following variables:
+
+- `HOSTEX_API_TOKEN` – API token from your Hostex account.
+- `OPENAI_API_KEY` – OpenAI API key for generating replies.
+- `HOSTEX_API_BASE` – optional Hostex API endpoint, defaults to
+  `https://api.hostex.io/v3`.
+
+These settings are required both for development and when deploying to
+production using `scripts/setup_production.sh`.
+
 ## API Routes
 
 - `GET /api/conversations` – fetches Hostex conversations from the last 7 days.
