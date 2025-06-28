@@ -92,14 +92,6 @@ export default function ChatApp() {
         // ignore parse error
       }
     }
-    fetch('/api/read-state')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.readState) {
-          setReadState((r) => ({ ...r, ...data.readState }))
-        }
-      })
-      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -130,11 +122,13 @@ export default function ChatApp() {
           const newUpdates = { ...updatesRef.current }
           const arr = Array.isArray(list) ? list : []
           arr.forEach((conv: any) => {
+            if (typeof conv.isRead === 'boolean') {
+              newReads[conv.id] = conv.isRead
+            }
             const old = oldMap[conv.id]
             const newLast = (conv.last_message || conv.lastMessage || {}).created_at
             const oldLast = old ? (old.last_message || old.lastMessage || {}).created_at : undefined
             if (!old) {
-              // don't override read state when first loading conversations
               newUpdates[conv.id] = true
             } else if (newLast && oldLast && new Date(newLast).getTime() > new Date(oldLast).getTime()) {
               if (conv.id !== selectedId) {

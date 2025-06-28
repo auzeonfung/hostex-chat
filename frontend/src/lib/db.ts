@@ -185,6 +185,24 @@ export async function listReadState(): Promise<Record<string, boolean>> {
   return result;
 }
 
+export async function getReadState(
+  conversationIds: string[],
+): Promise<Record<string, boolean>> {
+  if (!conversationIds.length) {
+    return {};
+  }
+  const placeholders = conversationIds.map(() => '?').join(',');
+  const rows = await run(
+    `SELECT conversation_id as conversationId, is_read as isRead FROM read_state WHERE conversation_id IN (${placeholders})`,
+    conversationIds,
+  );
+  const result: Record<string, boolean> = {};
+  for (const r of rows) {
+    result[r.conversationId] = !!r.isRead;
+  }
+  return result;
+}
+
 export async function listSettings(): Promise<Setting[]> {
   const rows = await run(
     `SELECT id, name, data, created_at as createdAt, updated_at as updatedAt FROM settings`

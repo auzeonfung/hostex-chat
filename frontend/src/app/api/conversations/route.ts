@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getReadState } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -35,6 +36,22 @@ export async function GET() {
     }
 
     const data = await res.json();
+    const list =
+      data.conversations ||
+      data.items ||
+      data.data?.conversations ||
+      data.data?.items ||
+      data.data ||
+      data;
+
+    if (Array.isArray(list)) {
+      const ids = list.map((c: any) => c.id).filter(Boolean);
+      const reads = await getReadState(ids);
+      list.forEach((c: any) => {
+        c.isRead = !!reads[c.id];
+      });
+    }
+
     return NextResponse.json(data);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
