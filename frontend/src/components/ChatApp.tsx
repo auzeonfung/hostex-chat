@@ -309,6 +309,29 @@ export default function ChatApp() {
     }
   }, [selectedId, fetchDetail])
 
+  useEffect(() => {
+    const es = new EventSource('/api/read-state/events')
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        const id = data.conversationId
+        if (!id) return
+        setReadState((r) => ({ ...r, [id]: !!data.read }))
+        if (data.read) {
+          setUpdates((u) => {
+            const { [id]: _removed, ...rest } = u
+            return rest
+          })
+        } else {
+          setUpdates((u) => ({ ...u, [id]: true }))
+        }
+      } catch {}
+    }
+    return () => {
+      es.close()
+    }
+  }, [])
+
   async function sendMessage() {
     if (!selectedId || !message.trim()) return
     setSending(true)
