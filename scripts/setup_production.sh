@@ -46,6 +46,7 @@ npm run build
 cd "$APP_DIR"
 npx tsc scripts/webhook-worker.ts \
   --module commonjs --target es2020 --esModuleInterop --skipLibCheck \
+  --typeRoots ./frontend/node_modules/@types --types node \
   --outDir .
 cd frontend
 
@@ -66,8 +67,10 @@ if [ "$LOCAL" != "$REMOTE" ]; then
   cd ..
   npx tsc scripts/webhook-worker.ts \
     --module commonjs --target es2020 --esModuleInterop --skipLibCheck \
+    --typeRoots ./frontend/node_modules/@types --types node \
     --outDir .
   cd frontend
+  systemctl daemon-reload
   systemctl restart hostex-chat.service
   systemctl restart hostex-chat-worker.service
 fi
@@ -181,3 +184,5 @@ NGINX
 ln -sf /etc/nginx/sites-available/hostex-chat /etc/nginx/sites-enabled/hostex-chat
 rm -f /etc/nginx/sites-enabled/default
 systemctl reload nginx
+systemctl restart hostex-chat.service
+systemctl restart hostex-chat-worker.service
