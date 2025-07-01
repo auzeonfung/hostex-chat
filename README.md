@@ -140,7 +140,8 @@ The script also compiles `scripts/webhook-worker.ts` and installs a
 forwards `/api/webhook/hostex` to this worker. Ensure `HOSTEX_API_TOKEN` is set
 so requests can be verified. The worker is started automatically but you can
 restart it with `systemctl restart hostex-chat-worker.service` when updating the
-code.
+code. The included update timer recompiles the worker and reloads systemd so the
+service picks up any changes automatically.
 
 A sample nginx configuration suitable for Cloudflare is included at
 `nginx/hostex-chat-cloudflare.conf`.
