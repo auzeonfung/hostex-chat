@@ -3,7 +3,6 @@
 set -euo pipefail
 
 cd frontend
-pnpm install
-cd ..
-cd backend
-pnpm install
+npm install
+cd ../backend
+npm install
