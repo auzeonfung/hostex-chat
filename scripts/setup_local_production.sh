@@ -53,12 +53,7 @@ npm run build
 
 cd "$APP_DIR/backend"
 npm install
-
-cd "$APP_DIR"
-npx tsc scripts/webhook-worker.ts \
-  --module commonjs --target es2020 --esModuleInterop --skipLibCheck \
-  --outDir .
-cd frontend
+cd ..
 
 cat >/usr/local/bin/hostex-chat-sync.sh <<'SYNC'
 #!/usr/bin/env bash
@@ -76,13 +71,8 @@ npm run build
 cd ../backend
 npm install
 cd ..
-npx tsc scripts/webhook-worker.ts \
-  --module commonjs --target es2020 --esModuleInterop --skipLibCheck \
-  --outDir .
 cd frontend
 systemctl restart hostex-chat.service
-systemctl restart hostex-chat-backend.service
-systemctl restart hostex-chat-worker.service
 SYNC
 chmod +x /usr/local/bin/hostex-chat-sync.sh
 
@@ -104,42 +94,6 @@ Environment=NODE_ENV=production
 WantedBy=multi-user.target
 SERVICE
 
-cat >/etc/systemd/system/hostex-chat-backend.service <<'BACKEND'
-[Unit]
-Description=Hostex Chat Backend
-After=network.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=/opt/hostex-chat/backend
-EnvironmentFile=$ENV_FILE
-ExecStart=/usr/bin/npm start
-Restart=always
-Environment=NODE_ENV=production
-
-[Install]
-WantedBy=multi-user.target
-BACKEND
-
-cat >/etc/systemd/system/hostex-chat-worker.service <<WORKER
-[Unit]
-Description=Hostex Chat Webhook Worker
-After=network.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=$APP_DIR/frontend
-EnvironmentFile=$ENV_FILE
-ExecStart=/usr/bin/node $APP_DIR/scripts/webhook-worker.js
-Restart=always
-Environment=NODE_ENV=production
-Environment=WEBHOOK_PORT=3100
-
-[Install]
-WantedBy=multi-user.target
-WORKER
 
 cat >/etc/systemd/system/hostex-chat-sync.service <<SYNC_SERVICE
 [Unit]
@@ -167,8 +121,6 @@ SYNC_TIMER
 
 systemctl daemon-reload
 systemctl enable --now hostex-chat.service
-systemctl enable --now hostex-chat-backend.service
-systemctl enable --now hostex-chat-worker.service
 systemctl enable --now hostex-chat-sync.timer
 
 cat >/etc/nginx/sites-available/hostex-chat <<NGINX
@@ -189,32 +141,6 @@ server {
     real_ip_header CF-Connecting-IP;
     include /etc/nginx/cloudflare-real-ip.conf;
 
-    # routes handled by the backend service
-    location ^~ /api/conversations {
-        proxy_pass http://localhost:4000/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-    }
-
-    location ^~ /api/read-state {
-        proxy_pass http://localhost:4000/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-    }
-
-    location ^~ /api/events {
-        proxy_pass http://localhost:4000/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-    }
-
-    # remaining API routes are handled by Next.js
     location /api/ {
         proxy_pass http://localhost:3000/api/;
         proxy_http_version 1.1;
@@ -232,11 +158,6 @@ server {
         proxy_cache_bypass \$http_upgrade;
     }
 
-    location = /api/webhook/hostex {
-        proxy_pass http://localhost:3100/hostex;
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-    }
 }
 NGINX
 

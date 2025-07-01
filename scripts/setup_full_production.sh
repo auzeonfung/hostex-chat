@@ -69,12 +69,7 @@ npm run build
 # install backend dependencies
 cd "$APP_DIR/backend"
 npm install
-# compile webhook worker
-cd "$APP_DIR"
-npx tsc scripts/webhook-worker.ts \
-  --module commonjs --target es2020 --esModuleInterop --skipLibCheck \
-  --outDir .
-cd frontend
+cd ..
 
 # create update script to pull latest code and rebuild
 cat >/usr/local/bin/hostex-chat-update.sh <<'UPDATE'
@@ -100,13 +95,7 @@ if [ "$LOCAL" != "$REMOTE" ]; then
   cd ../backend
   npm install
   cd ..
-  npx tsc scripts/webhook-worker.ts \
-    --module commonjs --target es2020 --esModuleInterop --skipLibCheck \
-    --outDir .
-  cd frontend
   systemctl restart hostex-chat.service
-  systemctl restart hostex-chat-backend.service
-  systemctl restart hostex-chat-worker.service
 fi
 UPDATE
 chmod +x /usr/local/bin/hostex-chat-update.sh
@@ -132,51 +121,6 @@ SERVICE
 
 systemctl daemon-reload
 systemctl enable --now hostex-chat.service
-
-# backend service
-cat >/etc/systemd/system/hostex-chat-backend.service <<'BACKEND'
-[Unit]
-Description=Hostex Chat Backend
-After=network.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=$APP_DIR/backend
-EnvironmentFile=$ENV_FILE
-ExecStart=/usr/bin/npm start
-Restart=always
-Environment=NODE_ENV=production
-
-[Install]
-WantedBy=multi-user.target
-BACKEND
-
-systemctl daemon-reload
-systemctl enable --now hostex-chat-backend.service
-
-# webhook worker service
-cat >/etc/systemd/system/hostex-chat-worker.service <<WORKER
-[Unit]
-Description=Hostex Chat Webhook Worker
-After=network.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=$APP_DIR/frontend
-EnvironmentFile=$ENV_FILE
-ExecStart=/usr/bin/node $APP_DIR/scripts/webhook-worker.js
-Restart=always
-Environment=NODE_ENV=production
-Environment=WEBHOOK_PORT=3100
-
-[Install]
-WantedBy=multi-user.target
-WORKER
-
-systemctl daemon-reload
-systemctl enable --now hostex-chat-worker.service
 
 # create systemd unit to update the app periodically
 cat >/etc/systemd/system/hostex-chat-update.service <<UPDATE_SERVICE
@@ -226,32 +170,6 @@ server {
     real_ip_header CF-Connecting-IP;
     include /etc/nginx/cloudflare-real-ip.conf;
 
-    # routes handled by the backend service
-    location ^~ /api/conversations {
-        proxy_pass http://localhost:4000/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-    }
-
-    location ^~ /api/read-state {
-        proxy_pass http://localhost:4000/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-    }
-
-    location ^~ /api/events {
-        proxy_pass http://localhost:4000/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-    }
-
-    # remaining API routes are handled by Next.js
     location /api/ {
         proxy_pass http://localhost:3000/api/;
         proxy_http_version 1.1;
@@ -269,11 +187,6 @@ server {
         proxy_cache_bypass \$http_upgrade;
     }
 
-    location = /api/webhook/hostex {
-        proxy_pass http://localhost:3100/hostex;
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-    }
 }
 NGINX
 

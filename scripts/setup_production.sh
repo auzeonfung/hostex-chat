@@ -42,12 +42,9 @@ fi
 cd "$APP_DIR/frontend"
 npm install
 npm run build
-# compile webhook worker
-cd "$APP_DIR"
-npx tsc scripts/webhook-worker.ts \
-  --module commonjs --target es2020 --esModuleInterop --skipLibCheck \
-  --outDir .
-cd frontend
+cd ../backend
+npm install
+cd ..
 
 # create update script to pull latest code and rebuild
 cat >/usr/local/bin/hostex-chat-update.sh <<'UPDATE'
@@ -63,13 +60,10 @@ if [ "$LOCAL" != "$REMOTE" ]; then
   cd frontend
   npm install
   npm run build
+  cd ../backend
+  npm install
   cd ..
-  npx tsc scripts/webhook-worker.ts \
-    --module commonjs --target es2020 --esModuleInterop --skipLibCheck \
-    --outDir .
-  cd frontend
   systemctl restart hostex-chat.service
-  systemctl restart hostex-chat-worker.service
 fi
 UPDATE
 chmod +x /usr/local/bin/hostex-chat-update.sh
@@ -94,28 +88,6 @@ SERVICE
 
 systemctl daemon-reload
 systemctl enable --now hostex-chat.service
-
-# webhook worker service
-cat >/etc/systemd/system/hostex-chat-worker.service <<WORKER
-[Unit]
-Description=Hostex Chat Webhook Worker
-After=network.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=$APP_DIR/frontend
-ExecStart=/usr/bin/node $APP_DIR/scripts/webhook-worker.js
-Restart=always
-Environment=NODE_ENV=production
-Environment=WEBHOOK_PORT=3100
-
-[Install]
-WantedBy=multi-user.target
-WORKER
-
-systemctl daemon-reload
-systemctl enable --now hostex-chat-worker.service
 
 # create systemd unit to update the app periodically
 cat >/etc/systemd/system/hostex-chat-update.service <<UPDATE_SERVICE
@@ -170,11 +142,6 @@ server {
         proxy_cache_bypass \$http_upgrade;
     }
 
-    location = /api/webhook/hostex {
-        proxy_pass http://localhost:3100/hostex;
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-    }
 }
 NGINX
 
