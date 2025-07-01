@@ -1,6 +1,6 @@
 # Hostex Chat
 
-Hostex Chat integrates Hostex conversations with ChatGPT. The web UI lives in `frontend/` and communicates with a Node.js backend in `backend/`.
+Hostex Chat integrates Hostex conversations with ChatGPT. All server logic now runs inside the Next.js app under `frontend/`, so only one service needs to be started.
 
 ## Quick Start
 
@@ -19,19 +19,14 @@ cp ../frontend/.env.example ../frontend/.env
 # edit frontend/.env and set HOSTEX_API_TOKEN, OPENAI_API_KEY and NEXT_PUBLIC_BACKEND_URL
 ```
 
-3. Start the servers in two terminals:
+3. Start the development server:
 
 ```bash
-# Terminal 1
 cd frontend
 npm run dev
-
-# Terminal 2
-cd backend
-npm start
 ```
 
-Browse <http://localhost:3000> to access the app. The backend stores data in `frontend/db.sqlite`.
+Browse <http://localhost:3000> to access the app. The server stores data in `frontend/db.sqlite`.
 
 ## Production Setup
 
