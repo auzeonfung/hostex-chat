@@ -9,7 +9,10 @@ This project integrates Hostex conversations with ChatGPT, offering a web-based 
    cd frontend
    npm install
    ```
-2. Copy `.env.example` to `.env` and set your Hostex and OpenAI keys.
+2. Copy `frontend/.env.example` to `frontend/.env` and set
+   `HOSTEX_API_TOKEN`, `OPENAI_API_KEY`, and `NEXT_PUBLIC_BACKEND_URL`.
+   Both the frontend and backend rely on these variables for polling and
+   API calls.
 3. Run the development server:
    ```bash
    npm run dev
