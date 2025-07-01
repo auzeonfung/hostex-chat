@@ -20,6 +20,8 @@ fi
 
 BASE_DOMAIN="${DOMAIN#*.}"
 
+ENV_FILE="$APP_DIR/.env"
+
 apt-get update
 apt-get install -y curl gnupg2 ca-certificates lsb-release nginx git rsync
 
@@ -28,6 +30,22 @@ apt-get install -y nodejs
 
 mkdir -p "$APP_DIR"
 rsync -a --delete --exclude node_modules --exclude .git "$SRC_DIR/" "$APP_DIR/"
+
+# write environment file for runtime configuration
+cat >"$ENV_FILE" <<EOF
+HOSTEX_API_TOKEN=${HOSTEX_API_TOKEN:-}
+OPENAI_API_KEY=${OPENAI_API_KEY:-}
+HOSTEX_API_BASE=${HOSTEX_API_BASE:-}
+NEXT_PUBLIC_BACKEND_URL=https://$DOMAIN/api
+PORT=4000
+EOF
+chown www-data:www-data "$ENV_FILE"
+chmod 600 "$ENV_FILE"
+
+# export vars for build
+set -a
+source "$ENV_FILE"
+set +a
 
 cd "$APP_DIR/frontend"
 npm install
@@ -47,7 +65,11 @@ cat >/usr/local/bin/hostex-chat-sync.sh <<'SYNC'
 set -e
 SRC_DIR="$SRC_DIR"
 APP_DIR=/opt/hostex-chat
+ENV_FILE="$APP_DIR/.env"
 rsync -a --delete --exclude node_modules --exclude .git "$SRC_DIR/" "$APP_DIR/"
+set -a
+source "$ENV_FILE"
+set +a
 cd "$APP_DIR/frontend"
 npm install
 npm run build
@@ -73,6 +95,7 @@ After=network.target
 Type=simple
 User=www-data
 WorkingDirectory=$APP_DIR/frontend
+EnvironmentFile=$ENV_FILE
 ExecStart=/usr/bin/npm start
 Restart=always
 Environment=NODE_ENV=production
@@ -90,6 +113,7 @@ After=network.target
 Type=simple
 User=www-data
 WorkingDirectory=/opt/hostex-chat/backend
+EnvironmentFile=$ENV_FILE
 ExecStart=/usr/bin/npm start
 Restart=always
 Environment=NODE_ENV=production
@@ -107,6 +131,7 @@ After=network.target
 Type=simple
 User=www-data
 WorkingDirectory=$APP_DIR/frontend
+EnvironmentFile=$ENV_FILE
 ExecStart=/usr/bin/node $APP_DIR/scripts/webhook-worker.js
 Restart=always
 Environment=NODE_ENV=production

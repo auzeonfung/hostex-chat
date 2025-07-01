@@ -48,6 +48,8 @@ Edit `frontend/.env` and set the following variables:
 These settings are required both for development and when deploying to
 production using `scripts/setup_full_production.sh` or
 `scripts/setup_local_production.sh`.
+The deployment scripts read them from the environment and write
+`/opt/hostex-chat/.env` for the running services.
 
 ## API Routes
 
@@ -141,14 +143,20 @@ A sample nginx configuration suitable for Cloudflare is included at
 `nginx/hostex-chat-cloudflare.conf`.
 
 ```bash
-DOMAIN=example.com sudo ./scripts/setup_full_production.sh
+export HOSTEX_API_TOKEN=your-token 
+export OPENAI_API_KEY=sk-xxx \
+export DOMAIN=example.com 
+sudo ./scripts/setup_full_production.sh
 ```
 
 To deploy from your current directory without cloning, use
 `scripts/setup_local_production.sh` instead:
 
 ```bash
-DOMAIN=example.com sudo ./scripts/setup_local_production.sh
+export HOSTEX_API_TOKEN=your-token 
+export OPENAI_API_KEY=sk-xxx \
+export DOMAIN=example.com 
+sudo ./scripts/setup_local_production.sh
 ```
 
 When using `setup_full_production.sh` you can set the `REPO_URL` environment

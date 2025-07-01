@@ -23,6 +23,9 @@ fi
 # derive base domain for certificate lookup (e.g. abc.ox.ci -> ox.ci)
 BASE_DOMAIN="${DOMAIN#*.}"
 
+# environment file used by all services
+ENV_FILE="$APP_DIR/.env"
+
 # install system packages
 apt-get update
 apt-get install -y curl gnupg2 ca-certificates lsb-release nginx git
@@ -33,6 +36,8 @@ apt-get install -y nodejs
 
 # clone or update application code
 mkdir -p "$APP_DIR"
+
+# clone repository or update existing checkout
 if [ ! -d "$APP_DIR/.git" ]; then
   git clone "$REPO_URL" "$APP_DIR"
 else
@@ -41,6 +46,23 @@ else
   git checkout main
   git pull --ff-only origin main
 fi
+
+# write environment file used by all services
+cat >"$ENV_FILE" <<EOF
+HOSTEX_API_TOKEN=${HOSTEX_API_TOKEN:-}
+OPENAI_API_KEY=${OPENAI_API_KEY:-}
+HOSTEX_API_BASE=${HOSTEX_API_BASE:-}
+NEXT_PUBLIC_BACKEND_URL=https://$DOMAIN/api
+PORT=4000
+EOF
+chown www-data:www-data "$ENV_FILE"
+chmod 600 "$ENV_FILE"
+
+# load env vars for the build
+set -a
+source "$ENV_FILE"
+set +a
+
 cd "$APP_DIR/frontend"
 npm install
 npm run build
@@ -60,6 +82,8 @@ cat >/usr/local/bin/hostex-chat-update.sh <<'UPDATE'
 set -e
 APP_DIR=/opt/hostex-chat
 REPO_URL="${REPO_URL:-https://github.com/auzeonfung/hostex-chat.git}"
+ENV_FILE="$APP_DIR/.env"
+
 cd "$APP_DIR"
 git remote set-url origin "$REPO_URL"
 git fetch origin
@@ -67,6 +91,9 @@ LOCAL=$(git rev-parse @)
 REMOTE=$(git rev-parse origin/main)
 if [ "$LOCAL" != "$REMOTE" ]; then
   git reset --hard origin/main
+  set -a
+  source "$ENV_FILE"
+  set +a
   cd frontend
   npm install
   npm run build
@@ -94,6 +121,7 @@ After=network.target
 Type=simple
 User=www-data
 WorkingDirectory=$APP_DIR/frontend
+EnvironmentFile=$ENV_FILE
 ExecStart=/usr/bin/npm start
 Restart=always
 Environment=NODE_ENV=production
@@ -115,6 +143,7 @@ After=network.target
 Type=simple
 User=www-data
 WorkingDirectory=$APP_DIR/backend
+EnvironmentFile=$ENV_FILE
 ExecStart=/usr/bin/npm start
 Restart=always
 Environment=NODE_ENV=production
@@ -136,6 +165,7 @@ After=network.target
 Type=simple
 User=www-data
 WorkingDirectory=$APP_DIR/frontend
+EnvironmentFile=$ENV_FILE
 ExecStart=/usr/bin/node $APP_DIR/scripts/webhook-worker.js
 Restart=always
 Environment=NODE_ENV=production
