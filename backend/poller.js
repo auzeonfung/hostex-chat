@@ -25,8 +25,18 @@ export function startPolling(onUpdate) {
       for (const conv of list) {
         await saveConversation(conv);
         const detail = await fetchJSON(`${baseUrl}/conversations/${conv.id}`);
-        const messages = detail.messages || [];
-        const added = await saveMessages(conv.id, messages);
+        const d = detail.data || detail;
+        let messages = d.messages;
+        if (!Array.isArray(messages)) {
+          try {
+            const m = await fetchJSON(`${baseUrl}/conversations/${conv.id}/messages`);
+            messages = m.messages || m.items || m.data?.messages || m.data?.items || m.data || m;
+          } catch (err) {
+            console.error('poll error', 'messages fetch', err.message);
+            messages = [];
+          }
+        }
+        const added = await saveMessages(conv.id, messages || []);
         if (added.length) {
           for (const m of added) {
             if (m.sender_role !== 'host') {
