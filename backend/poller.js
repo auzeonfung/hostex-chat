@@ -25,7 +25,8 @@ export function startPolling(onUpdate) {
       for (const conv of list) {
         await saveConversation(conv);
         const detail = await fetchJSON(`${baseUrl}/conversations/${conv.id}`);
-        let messages = detail.messages;
+        const d = detail.data || detail;
+        let messages = d.messages;
         if (!Array.isArray(messages)) {
           try {
             const m = await fetchJSON(`${baseUrl}/conversations/${conv.id}/messages`);
