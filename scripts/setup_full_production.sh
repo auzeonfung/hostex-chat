@@ -36,6 +36,7 @@ apt-get install -y nodejs
 
 # clone or update application code
 mkdir -p "$APP_DIR"
+
 # clone repository or update existing checkout
 if [ ! -d "$APP_DIR/.git" ]; then
   git clone "$REPO_URL" "$APP_DIR"
@@ -82,6 +83,7 @@ set -e
 APP_DIR=/opt/hostex-chat
 REPO_URL="${REPO_URL:-https://github.com/auzeonfung/hostex-chat.git}"
 ENV_FILE="$APP_DIR/.env"
+
 cd "$APP_DIR"
 git remote set-url origin "$REPO_URL"
 git fetch origin

@@ -143,16 +143,20 @@ A sample nginx configuration suitable for Cloudflare is included at
 `nginx/hostex-chat-cloudflare.conf`.
 
 ```bash
-HOSTEX_API_TOKEN=your-token OPENAI_API_KEY=sk-xxx \
-DOMAIN=example.com sudo ./scripts/setup_full_production.sh
+export HOSTEX_API_TOKEN=your-token 
+export OPENAI_API_KEY=sk-xxx \
+export DOMAIN=example.com 
+sudo ./scripts/setup_full_production.sh
 ```
 
 To deploy from your current directory without cloning, use
 `scripts/setup_local_production.sh` instead:
 
 ```bash
-HOSTEX_API_TOKEN=your-token OPENAI_API_KEY=sk-xxx \
-DOMAIN=example.com sudo ./scripts/setup_local_production.sh
+export HOSTEX_API_TOKEN=your-token 
+export OPENAI_API_KEY=sk-xxx \
+export DOMAIN=example.com 
+sudo ./scripts/setup_local_production.sh
 ```
 
 When using `setup_full_production.sh` you can set the `REPO_URL` environment
