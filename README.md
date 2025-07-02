@@ -1,6 +1,6 @@
 # Hostex Chat
 
-Hostex Chat integrates Hostex conversations with ChatGPT. All server logic now runs inside the Next.js app under `frontend/`, so only one service needs to be started.
+Hostex Chat integrates Hostex conversations with ChatGPT. The project contains a Next.js frontend and a Node-based backend that polls the Hostex API. Both services must run together.
 
 ## Quick Start
 
@@ -8,29 +8,37 @@ Hostex Chat integrates Hostex conversations with ChatGPT. All server logic now r
 
 ```bash
 git clone https://github.com/auzeonfung/hostex-chat.git
-cd hostex-chat/frontend && npm install
+cd hostex-chat
+cd frontend && npm install
 cd ../backend && npm install
+cd ..
 ```
 
 2. Copy the example environment file and set your keys:
 
 ```bash
-cp ../frontend/.env.example ../frontend/.env
-# edit frontend/.env and set HOSTEX_API_TOKEN, OPENAI_API_KEY and NEXT_PUBLIC_BACKEND_URL
+cp .env.example .env
+cp .env frontend/.env
+# edit .env and set HOSTEX_API_TOKEN, OPENAI_API_KEY and DOMAIN
 ```
 
-3. Start the development server:
+3. Start the backend server:
 
 ```bash
-cd frontend
-npm run dev
+npm start --prefix backend
+```
+
+4. In another terminal start the frontend dev server:
+
+```bash
+npm run dev --prefix frontend
 ```
 
 Browse <http://localhost:3000> to access the app. The server stores data in `frontend/db.sqlite`.
 
 ## Production Setup
 
-Run the automated script on Ubuntu to install Node.js, build the app and start systemd services. Provide your API keys and domain as environment variables:
+Run the automated script on Ubuntu to install Node.js, build the app and start systemd services. Provide your API keys and domain as environment variables. The script writes them to `/opt/hostex-chat/.env` which both services load:
 
 ```bash
 export HOSTEX_API_TOKEN=your-token
@@ -38,6 +46,7 @@ export OPENAI_API_KEY=sk-xxx
 export DOMAIN=example.com
 sudo ./scripts/setup_full_production.sh
 ```
+The script creates `/opt/hostex-chat/.env` containing these values. Both the frontend and backend services read from this file at startup.
 
 To deploy from the current directory without cloning:
 
@@ -47,6 +56,7 @@ export OPENAI_API_KEY=sk-xxx
 export DOMAIN=example.com
 sudo ./scripts/setup_local_production.sh
 ```
+This variant reuses the same `/opt/hostex-chat/.env` file so the services run with identical configuration.
 
 For the Codex test environment you can install minimal dependencies with:
 
