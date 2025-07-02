@@ -96,6 +96,7 @@ if [ "$LOCAL" != "$REMOTE" ]; then
   npm install
   cd ..
   systemctl restart hostex-chat.service
+  systemctl restart hostex-chat-backend.service
 fi
 UPDATE
 chmod +x /usr/local/bin/hostex-chat-update.sh
@@ -121,6 +122,28 @@ SERVICE
 
 systemctl daemon-reload
 systemctl enable --now hostex-chat.service
+
+# create backend systemd service
+cat >/etc/systemd/system/hostex-chat-backend.service <<SERVICE
+[Unit]
+Description=Hostex Chat Backend
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=$APP_DIR
+EnvironmentFile=$ENV_FILE
+ExecStart=/usr/bin/node backend/index.js
+Restart=always
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+
+systemctl daemon-reload
+systemctl enable --now hostex-chat-backend.service
 
 # create systemd unit to update the app periodically
 cat >/etc/systemd/system/hostex-chat-update.service <<UPDATE_SERVICE
@@ -169,6 +192,30 @@ server {
     # trust Cloudflare CDN
     real_ip_header CF-Connecting-IP;
     include /etc/nginx/cloudflare-real-ip.conf;
+
+    location ^~ /api/conversations {
+        proxy_pass http://localhost:4000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+    }
+
+    location ^~ /api/read-state {
+        proxy_pass http://localhost:4000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+    }
+
+    location ^~ /api/events {
+        proxy_pass http://localhost:4000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+    }
 
     location /api/ {
         proxy_pass http://localhost:3000/api/;
