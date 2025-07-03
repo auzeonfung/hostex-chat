@@ -11,7 +11,6 @@ const next = requireFrontend('next');
 const express = requireBackend('express');
 const cors = requireBackend('cors');
 const { WebSocketServer } = requireBackend('ws');
-
 const dev = process.env.NODE_ENV !== 'production';
 const nextApp = next({ dev, dir: './frontend' });
 const handle = nextApp.getRequestHandler();
