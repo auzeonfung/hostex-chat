@@ -171,7 +171,7 @@ export default function ChatApp() {
     load()
     const id = setInterval(load, 30000)
     return () => clearInterval(id)
-  }, [])
+  }, [selectedId])
 
   const orderMessages = useCallback((messages?: Message[]) => {
     if (!Array.isArray(messages)) return messages
