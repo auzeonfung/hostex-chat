@@ -1,18 +1,23 @@
 import { createRequire } from 'module';
 import http from 'http';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { listConversations, listConversation, listMessages, listReadState, setReadState } from './backend/db.js';
 import { addClient, removeClient, broadcast } from './backend/events.js';
 import { startPolling } from './backend/poller.js';
 
+const frontendDir = fileURLToPath(new URL('./frontend', import.meta.url));
 const requireFrontend = createRequire(new URL('./frontend/package.json', import.meta.url));
 const requireBackend = createRequire(new URL('./backend/package.json', import.meta.url));
+// Ensure tools like Tailwind CSS that rely on process.cwd() resolve the correct config
+process.chdir(frontendDir);
 
 const next = requireFrontend('next');
 const express = requireBackend('express');
 const cors = requireBackend('cors');
 const { WebSocketServer } = requireBackend('ws');
 const dev = process.env.NODE_ENV !== 'production';
-const nextApp = next({ dev, dir: './frontend' });
+const nextApp = next({ dev, dir: '.' });
 const handle = nextApp.getRequestHandler();
 
 nextApp.prepare().then(() => {
