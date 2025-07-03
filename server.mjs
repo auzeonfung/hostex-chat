@@ -1,15 +1,16 @@
 import { createRequire } from 'module';
-import express from 'express';
 import http from 'http';
-import cors from 'cors';
-import { WebSocketServer } from 'ws';
 import { listConversations, listConversation, listMessages, listReadState, setReadState } from './backend/db.js';
 import { addClient, removeClient, broadcast } from './backend/events.js';
 import { startPolling } from './backend/poller.js';
 
-const require = createRequire(new URL('./frontend/package.json', import.meta.url));
-const next = require('next');
+const requireFrontend = createRequire(new URL('./frontend/package.json', import.meta.url));
+const requireBackend = createRequire(new URL('./backend/package.json', import.meta.url));
 
+const next = requireFrontend('next');
+const express = requireBackend('express');
+const cors = requireBackend('cors');
+const { WebSocketServer } = requireBackend('ws');
 const dev = process.env.NODE_ENV !== 'production';
 const nextApp = next({ dev, dir: './frontend' });
 const handle = nextApp.getRequestHandler();
