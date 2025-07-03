@@ -1,25 +1,28 @@
 import { createRequire } from 'module';
 import http from 'http';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { listConversations, listConversation, listMessages, listReadState, setReadState } from './backend/db.js';
 import { addClient, removeClient, broadcast } from './backend/events.js';
 import { startPolling } from './backend/poller.js';
 
+const frontendDir = fileURLToPath(new URL('./frontend', import.meta.url));
 const requireFrontend = createRequire(new URL('./frontend/package.json', import.meta.url));
 const requireBackend = createRequire(new URL('./backend/package.json', import.meta.url));
+// Ensure tools like Tailwind CSS that rely on process.cwd() resolve the correct config
+process.chdir(frontendDir);
 
 const next = requireFrontend('next');
 const express = requireBackend('express');
 const cors = requireBackend('cors');
 const { WebSocketServer } = requireBackend('ws');
 const dev = process.env.NODE_ENV !== 'production';
-const nextApp = next({ dev, dir: './frontend' });
+const nextApp = next({ dev, dir: '.' });
 const handle = nextApp.getRequestHandler();
 
 nextApp.prepare().then(() => {
   const app = express();
   app.use(cors());
-  app.use(express.json());
-
   app.get('/api/conversations', async (_req, res) => {
     const list = await listConversations();
     const reads = await listReadState();
@@ -40,7 +43,7 @@ nextApp.prepare().then(() => {
     res.json({ readState: await listReadState() });
   });
 
-  app.post('/api/read-state', async (req, res) => {
+  app.post('/api/read-state', express.json(), async (req, res) => {
     const { conversationId, read } = req.body || {};
     if (!conversationId) {
       return res.status(400).json({ error: 'conversationId required' });

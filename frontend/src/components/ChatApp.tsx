@@ -57,7 +57,7 @@ export default function ChatApp() {
   const readRef = useRef(readState)
   const updateServerRead = useCallback(async (id: string, val: boolean) => {
     try {
-      await fetch(`${backend}/read-state`, {
+      await fetch(`${backend}/api/read-state`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversationId: id, read: val }),
@@ -76,7 +76,7 @@ export default function ChatApp() {
   useEffect(() => {
     async function loadReads() {
       try {
-        const res = await fetch(`${backend}/read-state`)
+        const res = await fetch(`${backend}/api/read-state`)
         const data = await safeJSON(res)
         if (res.ok && data.readState) {
           setReadState(data.readState)
@@ -117,7 +117,7 @@ export default function ChatApp() {
     async function load() {
       setLoadingList(true)
       try {
-        const res = await fetch(`${backend}/conversations`)
+        const res = await fetch(`${backend}/api/conversations`)
         const data = await safeJSON(res)
         if (!res.ok || data.error) {
           setError(data.error || 'Failed to load')
@@ -228,7 +228,7 @@ export default function ChatApp() {
     async (id: string) => {
       setLoadingDetail(true)
       try {
-        const res = await fetch(`${backend}/conversations/${id}`)
+        const res = await fetch(`${backend}/api/conversations/${id}`)
         const data = await safeJSON(res)
       if (!res.ok || data.error) {
         setError(data.error || 'Failed to load')
@@ -291,10 +291,10 @@ export default function ChatApp() {
 
   useEffect(() => {
     // start websocket server and connect
-    fetch(`${backend}/events`).catch(() => {})
+    fetch(`${backend}/api/events`).catch(() => {})
     const proto = backend.startsWith('https') ? 'wss' : backend.startsWith('http') ? 'ws' : window.location.protocol === 'https:' ? 'wss' : 'ws'
     const host = backend ? backend.replace(/^https?:\/\//, '') : window.location.host
-    const ws = new WebSocket(`${proto}://${host}/events`)
+    const ws = new WebSocket(`${proto}://${host}/api/events`)
     ws.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data as string)
