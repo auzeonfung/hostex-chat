@@ -23,8 +23,6 @@ const handle = nextApp.getRequestHandler();
 nextApp.prepare().then(() => {
   const app = express();
   app.use(cors());
-  app.use(express.json());
-
   app.get('/api/conversations', async (_req, res) => {
     const list = await listConversations();
     const reads = await listReadState();
@@ -45,7 +43,7 @@ nextApp.prepare().then(() => {
     res.json({ readState: await listReadState() });
   });
 
-  app.post('/api/read-state', async (req, res) => {
+  app.post('/api/read-state', express.json(), async (req, res) => {
     const { conversationId, read } = req.body || {};
     if (!conversationId) {
       return res.status(400).json({ error: 'conversationId required' });
