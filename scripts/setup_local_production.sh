@@ -8,34 +8,47 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-APP_DIR=/opt/hostex-chat
-SRC_DIR=$(pwd)
+APP_DIR=$(pwd)
 NODE_VERSION=22
 DOMAIN="${DOMAIN:-}"
 
+# Prompt for configuration
+read -p "Domain [${DOMAIN:-}]: " input
+DOMAIN=${input:-${DOMAIN:-}}
 if [ -z "$DOMAIN" ]; then
-  echo "Usage: DOMAIN=example.com sudo $0" >&2
+  echo "Domain is required" >&2
   exit 1
 fi
+read -p "Hostex API token [${HOSTEX_API_TOKEN:-}]: " input
+HOSTEX_API_TOKEN=${input:-${HOSTEX_API_TOKEN:-}}
+read -p "OpenAI API key [${OPENAI_API_KEY:-}]: " input
+OPENAI_API_KEY=${input:-${OPENAI_API_KEY:-}}
+read -p "Hostex API base [${HOSTEX_API_BASE:-https://api.hostex.io/v3}]: " input
+HOSTEX_API_BASE=${input:-${HOSTEX_API_BASE:-https://api.hostex.io/v3}}
 
 BASE_DOMAIN="${DOMAIN#*.}"
 
 ENV_FILE="$APP_DIR/.env"
 
 apt-get update
-apt-get install -y curl gnupg2 ca-certificates lsb-release nginx git rsync
+apt-get install -y curl gnupg2 ca-certificates lsb-release nginx git
 
 curl -fsSL https://deb.nodesource.com/setup_$NODE_VERSION.x | bash -
 apt-get install -y nodejs
 
 mkdir -p "$APP_DIR"
-rsync -a --delete --exclude node_modules --exclude .git "$SRC_DIR/" "$APP_DIR/"
+
+# remove old Hostex Chat services
+systemctl stop hostex-chat.service hostex-chat-backend.service hostex-chat-sync.service hostex-chat-sync.timer 2>/dev/null || true
+systemctl disable hostex-chat.service hostex-chat-backend.service hostex-chat-sync.service hostex-chat-sync.timer 2>/dev/null || true
+rm -f /etc/systemd/system/hostex-chat*.service /etc/systemd/system/hostex-chat*.timer
+systemctl daemon-reload
 
 # write environment file for runtime configuration
 cat >"$ENV_FILE" <<EOF
-HOSTEX_API_TOKEN=${HOSTEX_API_TOKEN:-}
-OPENAI_API_KEY=${OPENAI_API_KEY:-}
-HOSTEX_API_BASE=${HOSTEX_API_BASE:-}
+HOSTEX_API_TOKEN=$HOSTEX_API_TOKEN
+OPENAI_API_KEY=$OPENAI_API_KEY
+HOSTEX_API_BASE=$HOSTEX_API_BASE
 NEXT_PUBLIC_BACKEND_URL=https://$DOMAIN/api
 PORT=4000
 EOF
@@ -55,26 +68,6 @@ cd "$APP_DIR/backend"
 npm install
 cd ..
 
-cat >/usr/local/bin/hostex-chat-sync.sh <<'SYNC'
-#!/usr/bin/env bash
-set -e
-SRC_DIR="$SRC_DIR"
-APP_DIR=/opt/hostex-chat
-ENV_FILE="$APP_DIR/.env"
-rsync -a --delete --exclude node_modules --exclude .git "$SRC_DIR/" "$APP_DIR/"
-set -a
-source "$ENV_FILE"
-set +a
-cd "$APP_DIR/frontend"
-npm install
-npm run build
-cd ../backend
-npm install
-cd ..
-cd frontend
-systemctl restart hostex-chat.service
-SYNC
-chmod +x /usr/local/bin/hostex-chat-sync.sh
 
 cat >/etc/systemd/system/hostex-chat.service <<SERVICE
 [Unit]
@@ -94,34 +87,28 @@ Environment=NODE_ENV=production
 WantedBy=multi-user.target
 SERVICE
 
-
-cat >/etc/systemd/system/hostex-chat-sync.service <<SYNC_SERVICE
+cat >/etc/systemd/system/hostex-chat-backend.service <<SERVICE
 [Unit]
-Description=Sync Hostex Chat from local checkout
-Wants=network-online.target
-After=network-online.target
+Description=Hostex Chat Backend
+After=network.target
 
 [Service]
-Type=oneshot
-ExecStart=/usr/local/bin/hostex-chat-sync.sh
-SYNC_SERVICE
-
-cat >/etc/systemd/system/hostex-chat-sync.timer <<SYNC_TIMER
-[Unit]
-Description=Periodically sync Hostex Chat from local checkout
-
-[Timer]
-OnBootSec=5min
-OnUnitActiveSec=5min
-Unit=hostex-chat-sync.service
+Type=simple
+User=www-data
+WorkingDirectory=$APP_DIR
+EnvironmentFile=$ENV_FILE
+ExecStart=/usr/bin/node backend/index.js
+Restart=always
+Environment=NODE_ENV=production
 
 [Install]
-WantedBy=timers.target
-SYNC_TIMER
+WantedBy=multi-user.target
+SERVICE
+
 
 systemctl daemon-reload
 systemctl enable --now hostex-chat.service
-systemctl enable --now hostex-chat-sync.timer
+systemctl enable --now hostex-chat-backend.service
 
 cat >/etc/nginx/sites-available/hostex-chat <<NGINX
 server {

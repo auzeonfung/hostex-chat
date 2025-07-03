@@ -5,8 +5,8 @@ After=network.target
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/opt/hostex-chat
-EnvironmentFile=/opt/hostex-chat/.env
+WorkingDirectory=/path/to/hostex-chat
+EnvironmentFile=/path/to/hostex-chat/.env
 ExecStart=/usr/bin/node backend/index.js
 Restart=always
 Environment=NODE_ENV=production
