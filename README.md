@@ -22,13 +22,30 @@ cp .env frontend/.env
 # edit .env and set HOSTEX_API_TOKEN, OPENAI_API_KEY and DOMAIN
 ```
 
-3. Start the backend server:
+3. Start the combined server which hosts both the frontend and backend APIs. It
+   reads configuration from `.env` and will run the Next.js development server
+   when `NODE_ENV` is not set to `production`:
+
+```bash
+node server.mjs
+```
+
+    To use a custom port define the `PORT` environment variable before running
+    the file. When deploying you should first build the frontend and then run
+    the server in production mode:
+
+    ```bash
+    npm run build --prefix frontend
+    NODE_ENV=production PORT=4000 node server.mjs
+    ```
+
+4. Alternatively you can start the services separately. First run the backend server:
 
 ```bash
 npm start --prefix backend
 ```
 
-4. In another terminal start the frontend dev server:
+5. In another terminal start the frontend dev server:
 
 ```bash
 npm run dev --prefix frontend
@@ -46,7 +63,15 @@ export OPENAI_API_KEY=sk-xxx
 export DOMAIN=example.com
 sudo ./scripts/setup_full_production.sh
 ```
-The script creates `/opt/hostex-chat/.env` containing these values. Both the frontend and backend services read from this file at startup.
+The script creates `/opt/hostex-chat/.env` containing these values. Both the
+frontend and backend services read from this file at startup.  You can also run
+them as a single service by launching `server.mjs` through your service manager.
+For a `systemd` unit the `ExecStart` line might look like:
+
+```ini
+ExecStart=/usr/bin/node /opt/hostex-chat/server.mjs
+Environment=NODE_ENV=production
+```
 
 To deploy from the current directory without cloning:
 
