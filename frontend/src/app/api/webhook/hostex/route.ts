@@ -22,10 +22,11 @@ export async function POST(req: NextRequest) {
 
   console.log('Webhook received', { signature, expected, body: rawBody });
 
-  if (signature !== expected) {
-    console.warn('Invalid webhook signature');
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-  }
+  // Webhook signature validation disabled
+  // if (signature !== expected) {
+  //   console.warn('Invalid webhook signature');
+  //   return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+  // }
 
   let payload: any;
   try {

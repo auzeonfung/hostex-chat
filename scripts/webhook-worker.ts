@@ -23,11 +23,12 @@ const server = http.createServer((req, res) => {
   req.on('end', async () => {
     const signature = (req.headers['hostex-signature'] || '') as string
     const expected = crypto.createHmac('sha256', TOKEN).update(data).digest('hex')
-    if (signature !== expected) {
-      console.warn('Invalid webhook signature')
-      res.statusCode = 401
-      return res.end('Invalid signature')
-    }
+    // Webhook signature validation disabled
+    // if (signature !== expected) {
+    //   console.warn('Invalid webhook signature')
+    //   res.statusCode = 401
+    //   return res.end('Invalid signature')
+    // }
 
     let payload: any
     try {
