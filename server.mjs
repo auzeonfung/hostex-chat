@@ -1,7 +1,7 @@
 import { createRequire } from 'module';
 import http from 'http';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+
 import { listConversations, listConversation, listMessages, listReadState, setReadState } from './backend/db.js';
 import { addClient, removeClient, broadcast } from './backend/events.js';
 import { startPolling } from './backend/poller.js';
@@ -51,6 +51,9 @@ nextApp.prepare().then(() => {
     setReadState(conversationId, !!read);
     res.json({ status: 'ok' });
   });
+
+  // Provide a simple health check for the events endpoint used by the frontend
+  app.get('/api/events', (_req, res) => res.sendStatus(200));
 
   app.all('*', (req, res) => handle(req, res));
 
