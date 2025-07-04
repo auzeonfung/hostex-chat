@@ -77,9 +77,9 @@ export default function ConversationItem({ conv, selected, hasUpdate, unread, on
       <Button
         className={cn(
           'w-full text-left h-auto border',
-          selected ? 'bg-muted' : unread ? 'bg-primary/10' : '',
-          hasUpdate || unread ? 'border-blue-500' : '',
-          hasUpdate ? 'border-blue-800' : ''
+          unread && cn('bg-blue-50', !hasUpdate && 'border-blue-500'),
+          hasUpdate && 'border-blue-800',
+          selected && 'bg-muted'
         )}
         onClick={onClick}
         variant="secondary"
