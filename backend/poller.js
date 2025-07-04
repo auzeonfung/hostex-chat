@@ -12,42 +12,52 @@ async function fetchJSON(url) {
   return res.json();
 }
 
-export function startPolling(onUpdate) {
+export async function pollOnce(onUpdate) {
   if (!token) {
     console.error('HOSTEX_API_TOKEN not configured');
     return;
   }
-  setInterval(async () => {
-    try {
-      const data = await fetchJSON(`${baseUrl}/conversations?offset=0&limit=50`);
-      const list = data.conversations || data.items || data.data?.conversations || data.data?.items || data.data || data;
-      if (!Array.isArray(list)) return;
-      for (const conv of list) {
-        await saveConversation(conv);
-        const detail = await fetchJSON(`${baseUrl}/conversations/${conv.id}`);
-        const d = detail.data || detail;
-        let messages = d.messages;
-        if (!Array.isArray(messages)) {
-          try {
-            const m = await fetchJSON(`${baseUrl}/conversations/${conv.id}/messages`);
-            messages = m.messages || m.items || m.data?.messages || m.data?.items || m.data || m;
-          } catch (err) {
-            console.error('poll error', 'messages fetch', err.message);
-            messages = [];
-          }
-        }
-        const added = await saveMessages(conv.id, messages || []);
-        if (added.length) {
-          for (const m of added) {
-            if (m.sender_role !== 'host') {
-              setReadState(conv.id, false);
-            }
-          }
-          if (onUpdate) onUpdate({ conversationId: conv.id });
+  try {
+    const data = await fetchJSON(`${baseUrl}/conversations?offset=0&limit=50`);
+    const list =
+      data.conversations || data.items || data.data?.conversations || data.data?.items || data.data || data;
+    if (!Array.isArray(list)) return;
+    for (const conv of list) {
+      await saveConversation(conv);
+      const detail = await fetchJSON(`${baseUrl}/conversations/${conv.id}`);
+      const d = detail.data || detail;
+      let messages = d.messages;
+      if (!Array.isArray(messages)) {
+        try {
+          const m = await fetchJSON(`${baseUrl}/conversations/${conv.id}/messages`);
+          messages = m.messages || m.items || m.data?.messages || m.data?.items || m.data || m;
+        } catch (err) {
+          console.error('poll error', 'messages fetch', err.message);
+          messages = [];
         }
       }
-    } catch (err) {
-      console.error('poll error', err.message);
+      const added = await saveMessages(conv.id, messages || []);
+      if (added.length) {
+        for (const m of added) {
+          if (m.sender_role !== 'host') {
+            setReadState(conv.id, false);
+          }
+        }
+        if (onUpdate) onUpdate({ conversationId: conv.id });
+      }
     }
-  }, 5000);
+  } catch (err) {
+    console.error('poll error', err.message);
+  }
 }
+
+export function startPolling(onUpdate, interval) {
+  if (!token) {
+    console.error('HOSTEX_API_TOKEN not configured');
+    return;
+  }
+  if (interval && interval > 0) {
+    setInterval(() => pollOnce(onUpdate), interval * 60 * 1000);
+  }
+}
+

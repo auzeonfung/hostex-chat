@@ -45,6 +45,7 @@ db.exec(`
     id TEXT PRIMARY KEY,
     name TEXT,
     data TEXT,
+    poll_interval INTEGER DEFAULT 0,
     created_at TEXT,
     updated_at TEXT
   );
@@ -113,4 +114,13 @@ export function saveMessages(conversationId, messages) {
 export function listMessages(conversationId) {
   const rows = run(`SELECT data FROM messages WHERE conversation_id=? ORDER BY created_at`, [conversationId]);
   return rows.map(r => JSON.parse(r.data));
+}
+
+export function getSetting(id) {
+  const rows = run(
+    `SELECT id, name, data, poll_interval as pollInterval, created_at as createdAt, updated_at as updatedAt FROM settings WHERE id=?`,
+    [id]
+  );
+  const r = rows[0];
+  return r ? { ...r, data: JSON.parse(r.data), pollInterval: r.pollInterval ?? 0 } : null;
 }

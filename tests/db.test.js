@@ -38,14 +38,16 @@ test('read state', async () => {
 });
 
 test('settings CRUD', async () => {
-  const setting = await db.addSetting('demo', {x:1});
+  const setting = await db.addSetting('demo', {x:1}, 5);
   let fetched = await db.getSetting(setting.id);
   assert.strictEqual(fetched.name, 'demo');
   assert.deepStrictEqual(fetched.data, {x:1});
-  await db.updateSetting(setting.id, 'demo2', {x:2});
+  assert.strictEqual(fetched.pollInterval, 5);
+  await db.updateSetting(setting.id, 'demo2', {x:2}, 0);
   fetched = await db.getSetting(setting.id);
   assert.strictEqual(fetched.name, 'demo2');
   assert.deepStrictEqual(fetched.data, {x:2});
+  assert.strictEqual(fetched.pollInterval, 0);
   const list = await db.listSettings();
   assert.ok(list.find(s => s.id === setting.id));
   await db.deleteSetting(setting.id);

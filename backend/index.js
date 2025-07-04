@@ -2,9 +2,10 @@ import express from 'express';
 import http from 'http';
 import { WebSocketServer } from 'ws';
 import cors from 'cors';
-import { listConversations, listConversation, listMessages, listReadState, setReadState } from './db.js';
+import { listConversations, listConversation, listMessages, listReadState, setReadState, getSetting } from './db.js';
 import { addClient, removeClient, broadcast } from './events.js';
-import { startPolling } from './poller.js';
+import { startPolling, pollOnce } from './poller.js';
+import { LocalStorage } from 'node-localstorage';
 
 const app = express();
 app.use(cors());
@@ -42,7 +43,19 @@ wss.on('connection', (ws) => {
   ws.on('close', () => removeClient(ws));
 });
 
-startPolling(broadcast);
+const ls = new LocalStorage('./localStorage');
+const activeId = ls.getItem('activeSettingId');
+let interval = 0;
+if (activeId) {
+  const setting = getSetting(activeId);
+  if (setting) interval = setting.pollInterval || 0;
+}
+app.post('/poll-now', async (_req, res) => {
+  await pollOnce(broadcast);
+  res.json({ status: 'ok' });
+});
+
+startPolling(broadcast, interval);
 
 const port = process.env.PORT || 4000;
 server.listen(port, () => {
