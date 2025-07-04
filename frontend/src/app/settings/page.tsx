@@ -17,6 +17,7 @@ interface Setting {
   id: string;
   name: string;
   data: any;
+  pollInterval: number;
 }
 
 interface Model { id: string }
@@ -33,6 +34,7 @@ export default function SettingsPage() {
   const [prompt, setPrompt] = useState("")
   const [theme, setTheme] = useState("system")
   const [autoReply, setAutoReply] = useState(false)
+  const [pollValue, setPollValue] = useState("refresh")
 
   async function load() {
     const res = await fetch("/api/settings")
@@ -54,6 +56,7 @@ export default function SettingsPage() {
       setPrompt("");
       setTheme("system");
       setAutoReply(false);
+      setPollValue("refresh");
       return;
     }
     const s = settings.find((s) => s.id === selected)
@@ -64,6 +67,11 @@ export default function SettingsPage() {
       setPrompt(s.data.prompt || "")
       setTheme(s.data.theme || "system")
       setAutoReply(!!s.data.autoReply)
+      if (s.pollInterval === 0) {
+        setPollValue(s.data.pollOnRefresh ? "refresh" : "never")
+      } else {
+        setPollValue(String(s.pollInterval))
+      }
     }
   }, [selected, settings])
 
@@ -82,18 +90,27 @@ export default function SettingsPage() {
 
   async function save() {
     const payload = { apiKey, model, prompt, theme, autoReply }
+    let interval = 0
+    if (pollValue === "refresh") {
+      payload["pollOnRefresh"] = true
+    } else if (pollValue === "never") {
+      payload["pollOnRefresh"] = false
+    } else {
+      interval = parseInt(pollValue) || 0
+      payload["pollOnRefresh"] = false
+    }
     if (selected) {
       await fetch(`/api/settings/${selected}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, data: payload }),
+        body: JSON.stringify({ name, data: payload, pollInterval: interval }),
       })
       localStorage.setItem("activeSettingId", selected)
     } else {
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name || "Default", data: payload }),
+        body: JSON.stringify({ name: name || "Default", data: payload, pollInterval: interval }),
       })
       const data = await res.json()
       const newId = data.setting.id
@@ -187,6 +204,20 @@ export default function SettingsPage() {
               Auto generate reply
             </Toggle>
           </div>
+          <label className="block space-y-1">
+            <span className="font-medium">Poll Interval</span>
+            <Select value={pollValue} onValueChange={(val) => setPollValue(val)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select interval" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="refresh">On page refresh</SelectItem>
+                <SelectItem value="never">Never</SelectItem>
+                <SelectItem value="5">5 minutes</SelectItem>
+                <SelectItem value="15">15 minutes</SelectItem>
+              </SelectContent>
+            </Select>
+          </label>
           <label className="block space-y-1">
             <span className="font-medium">Theme</span>
             <Select value={theme} onValueChange={(val) => setTheme(val)}>

@@ -119,6 +119,12 @@ export default function ChatApp() {
     }
   }, [config])
 
+  useEffect(() => {
+    if (config && config.pollInterval === 0 && config.data?.pollOnRefresh) {
+      fetch('/api/poll-now', { method: 'POST' }).catch(() => {})
+    }
+  }, [config])
+
   // readState is initialized from the server response when loading
   // conversations. Local updates are kept in memory and persisted via
   // `/api/read-state` so the state is shared across devices.

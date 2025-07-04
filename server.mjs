@@ -4,7 +4,9 @@ import { fileURLToPath } from 'url';
 
 import { listConversations, listConversation, listMessages, listReadState, setReadState } from './backend/db.js';
 import { addClient, removeClient, broadcast } from './backend/events.js';
-import { startPolling } from './backend/poller.js';
+import { startPolling, pollOnce } from './backend/poller.js';
+import { getSetting } from './backend/db.js';
+import { LocalStorage } from 'node-localstorage';
 
 const frontendDir = fileURLToPath(new URL('./frontend', import.meta.url));
 const requireFrontend = createRequire(new URL('./frontend/package.json', import.meta.url));
@@ -65,7 +67,19 @@ nextApp.prepare().then(() => {
     ws.on('close', () => removeClient(ws));
   });
 
-  startPolling(broadcast);
+  const ls = new LocalStorage('./localStorage');
+  const activeId = ls.getItem('activeSettingId');
+  let interval = 0;
+  if (activeId) {
+    const setting = getSetting(activeId);
+    if (setting) interval = setting.pollInterval || 0;
+  }
+  app.post('/api/poll-now', async (_req, res) => {
+    await pollOnce(broadcast);
+    res.json({ status: 'ok' });
+  });
+
+  startPolling(broadcast, interval);
 
   const port = parseInt(process.env.PORT || '3000', 10);
   server.listen(port, () => {

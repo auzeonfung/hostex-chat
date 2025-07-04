@@ -29,6 +29,7 @@ export interface Setting {
   id: string;
   name: string;
   data: any;
+  pollInterval: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -65,6 +66,7 @@ db.exec(`
     id TEXT PRIMARY KEY,
     name TEXT,
     data TEXT,
+    poll_interval INTEGER DEFAULT 0,
     created_at TEXT,
     updated_at TEXT
   );
@@ -205,35 +207,35 @@ export async function getReadState(
 
 export async function listSettings(): Promise<Setting[]> {
   const rows = await run(
-    `SELECT id, name, data, created_at as createdAt, updated_at as updatedAt FROM settings`
+    `SELECT id, name, data, poll_interval as pollInterval, created_at as createdAt, updated_at as updatedAt FROM settings`
   );
-  return rows.map((r: any) => ({ ...r, data: JSON.parse(r.data) }));
+  return rows.map((r: any) => ({ ...r, data: JSON.parse(r.data), pollInterval: r.pollInterval ?? 0 }));
 }
 
 export async function getSetting(id: string): Promise<Setting | undefined> {
   const rows = await run(
-    `SELECT id, name, data, created_at as createdAt, updated_at as updatedAt FROM settings WHERE id=?`,
+    `SELECT id, name, data, poll_interval as pollInterval, created_at as createdAt, updated_at as updatedAt FROM settings WHERE id=?`,
     [id]
   );
   const r = rows[0];
-  return r ? { ...r, data: JSON.parse(r.data) } : undefined;
+  return r ? { ...r, data: JSON.parse(r.data), pollInterval: r.pollInterval ?? 0 } : undefined;
 }
 
-export async function addSetting(name: string, data: any): Promise<Setting> {
+export async function addSetting(name: string, data: any, pollInterval = 0): Promise<Setting> {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   await run(
-    `INSERT INTO settings (id, name, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
-    [id, name, JSON.stringify(data), now, now]
+    `INSERT INTO settings (id, name, data, poll_interval, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+    [id, name, JSON.stringify(data), pollInterval, now, now]
   );
-  return { id, name, data, createdAt: now, updatedAt: now };
+  return { id, name, data, pollInterval, createdAt: now, updatedAt: now };
 }
 
-export async function updateSetting(id: string, name: string, data: any) {
+export async function updateSetting(id: string, name: string, data: any, pollInterval = 0) {
   const now = new Date().toISOString();
   await run(
-    `UPDATE settings SET name=?, data=?, updated_at=? WHERE id=?`,
-    [name, JSON.stringify(data), now, id]
+    `UPDATE settings SET name=?, data=?, poll_interval=?, updated_at=? WHERE id=?`,
+    [name, JSON.stringify(data), pollInterval, now, id]
   );
 }
 
