@@ -6,11 +6,11 @@ import { listConversations, listConversation, listMessages, listReadState, setRe
 import { addClient, removeClient, broadcast } from './backend/events.js';
 import { startPolling, pollOnce } from './backend/poller.js';
 import { getSetting } from './backend/db.js';
-import { LocalStorage } from 'node-localstorage';
 
 const frontendDir = fileURLToPath(new URL('./frontend', import.meta.url));
 const requireFrontend = createRequire(new URL('./frontend/package.json', import.meta.url));
 const requireBackend = createRequire(new URL('./backend/package.json', import.meta.url));
+const { LocalStorage } = requireBackend('node-localstorage');
 // Ensure tools like Tailwind CSS that rely on process.cwd() resolve the correct config
 process.chdir(frontendDir);
 
