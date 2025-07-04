@@ -66,6 +66,14 @@ export default function ChatApp() {
       })
     } catch {}
   }, [])
+
+  const updateReadState = useCallback((id: string, read: boolean) => {
+    setReadState((prev) => {
+      const next = { ...prev, [id]: read }
+      readRef.current = next
+      return next
+    })
+  }, [])
   useEffect(() => {
     readRef.current = readState
   }, [readState])
@@ -259,7 +267,7 @@ export default function ChatApp() {
           messages: ordered,
         })
 
-        setReadState((r) => ({ ...r, [id]: true }))
+        updateReadState(id, true)
         updateServerRead(id, true)
 
         if (ordered && config?.data?.autoReply) {
@@ -304,12 +312,12 @@ export default function ChatApp() {
         if (!id) return
         if (id === selectedId) {
           fetchDetail(id)
-          setReadState((r) => ({ ...r, [id]: true }))
+          updateReadState(id, true)
           updateServerRead(id, true)
           console.log('WS update for conversation', id, data)
         } else {
           setUpdates((u) => ({ ...u, [id]: true }))
-          setReadState((r) => ({ ...r, [id]: false }))
+          updateReadState(id, false)
           updateServerRead(id, false)
         }
       } catch {
@@ -368,12 +376,10 @@ export default function ChatApp() {
 
   function markAllRead() {
     const ids = conversations.map((c) => c.id)
-    setReadState((prev) => {
-      const next = { ...prev }
-      ids.forEach((id) => (next[id] = true))
-      return next
+    ids.forEach((id) => {
+      updateReadState(id, true)
+      updateServerRead(id, true)
     })
-    ids.forEach((id) => updateServerRead(id, true))
   }
 
   const visibleConversations = conversations
@@ -428,7 +434,7 @@ export default function ChatApp() {
                   onClick={() => {
                     router.push(`/chat/${conv.id}`)
                     setSelectedId(conv.id)
-                    setReadState((r) => ({ ...r, [conv.id]: true }))
+                    updateReadState(conv.id, true)
                     updateServerRead(conv.id, true)
                     setUpdates((u) => {
                       const { [conv.id]: _removed, ...rest } = u
