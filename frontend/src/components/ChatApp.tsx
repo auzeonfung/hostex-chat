@@ -56,6 +56,7 @@ export default function ChatApp() {
   const [config, setConfig] = useState<any>(null)
   const [sortDesc, setSortDesc] = useState(true)
   const [showUnreadOnly, setShowUnreadOnly] = useState(false)
+  const [isLoadingReadState, setIsLoadingReadState] = useState(true)
   const readRef = useRef(readState)
   const updateServerRead = useCallback(async (id: string, val: boolean) => {
     try {
@@ -82,16 +83,23 @@ export default function ChatApp() {
     updatesRef.current = updates
   }, [updates])
 
-  // load read/unread state so refreshing the page keeps read status
+  // readState is initialized from the server so that refreshing the page keeps
+  // read/unread status in sync across devices. We delay rendering until the
+  // initial state is fetched to avoid conversations flashing as unread.
   useEffect(() => {
     async function loadReads() {
+      setIsLoadingReadState(true)
       try {
         const res = await fetch(`${backend}/api/read-state`)
         const data = await safeJSON(res)
         if (res.ok && data.readState) {
           setReadState(data.readState)
         }
-      } catch {}
+      } catch {
+        // ignore failures
+      } finally {
+        setIsLoadingReadState(false)
+      }
     }
     loadReads()
   }, [])
@@ -430,25 +438,30 @@ export default function ChatApp() {
                 </Button>
               </div>
               <ul className="flex-1 overflow-y-auto p-4 space-y-2">
-              {visibleConversations.map((conv) => (
-                <ConversationItem
-                  key={conv.id}
-                  conv={conv}
-                  selected={selectedId === conv.id}
-                  hasUpdate={updates[conv.id]}
-                  unread={!readState[conv.id]}
-                  onClick={() => {
-                    router.push(`/chat/${conv.id}`)
-                    setSelectedId(conv.id)
-                    updateReadState(conv.id, true)
-                    updateServerRead(conv.id, true)
-                    setUpdates((u) => {
-                      const { [conv.id]: _removed, ...rest } = u
-                      return rest
-                    })
-                  }}
-                />
-              ))}
+              {!isLoadingReadState &&
+                visibleConversations.map((conv) => (
+                  <ConversationItem
+                    key={conv.id}
+                    conv={conv}
+                    selected={selectedId === conv.id}
+                    hasUpdate={updates[conv.id]}
+                    unread={
+                      readState[conv.id] !== undefined
+                        ? !readState[conv.id]
+                        : !conv.isRead
+                    }
+                    onClick={() => {
+                      router.push(`/chat/${conv.id}`)
+                      setSelectedId(conv.id)
+                      updateReadState(conv.id, true)
+                      updateServerRead(conv.id, true)
+                      setUpdates((u) => {
+                        const { [conv.id]: _removed, ...rest } = u
+                        return rest
+                      })
+                    }}
+                  />
+                ))}
               </ul>
             </>
           )}
