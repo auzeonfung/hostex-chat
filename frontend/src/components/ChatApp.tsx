@@ -54,6 +54,8 @@ export default function ChatApp() {
   const [updates, setUpdates] = useState<Record<string, boolean>>({})
   const [readState, setReadState] = useState<Record<string, boolean>>({})
   const [config, setConfig] = useState<any>(null)
+  const [sortDesc, setSortDesc] = useState(true)
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false)
   const readRef = useRef(readState)
   const updateServerRead = useCallback(async (id: string, val: boolean) => {
     try {
@@ -364,6 +366,24 @@ export default function ChatApp() {
     }
   }
 
+  function markAllRead() {
+    const ids = conversations.map((c) => c.id)
+    setReadState((prev) => {
+      const next = { ...prev }
+      ids.forEach((id) => (next[id] = true))
+      return next
+    })
+    ids.forEach((id) => updateServerRead(id, true))
+  }
+
+  const visibleConversations = conversations
+    .filter((c) => !showUnreadOnly || !readState[c.id])
+    .sort((a: any, b: any) => {
+      const ta = new Date((a.last_message || a.lastMessage || {}).created_at || 0).getTime()
+      const tb = new Date((b.last_message || b.lastMessage || {}).created_at || 0).getTime()
+      return sortDesc ? tb - ta : ta - tb
+    })
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden w-full h-full">
       <Header />
@@ -377,8 +397,28 @@ export default function ChatApp() {
           ) : error ? (
             <p className="p-4 text-red-600">{error}</p>
           ) : (
-            <ul className="flex-1 overflow-y-auto p-4 space-y-2">
-              {conversations.map((conv) => (
+            <>
+              <div className="p-2 flex items-center gap-2 border-b">
+                <Button variant="outline" size="sm" onClick={markAllRead}>
+                  Mark all read
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowUnreadOnly((v) => !v)}
+                >
+                  {showUnreadOnly ? 'Show all' : 'Show unread'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSortDesc((v) => !v)}
+                >
+                  {sortDesc ? 'Oldest first' : 'Newest first'}
+                </Button>
+              </div>
+              <ul className="flex-1 overflow-y-auto p-4 space-y-2">
+              {visibleConversations.map((conv) => (
                 <ConversationItem
                   key={conv.id}
                   conv={conv}
@@ -397,7 +437,8 @@ export default function ChatApp() {
                   }}
                 />
               ))}
-            </ul>
+              </ul>
+            </>
           )}
         </aside>
         <Separator orientation="vertical" />
