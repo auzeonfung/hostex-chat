@@ -57,6 +57,11 @@ nextApp.prepare().then(() => {
   // Provide a simple health check for the events endpoint used by the frontend
   app.get('/api/events', (_req, res) => res.sendStatus(200));
 
+  app.post('/api/poll-now', async (_req, res) => {
+    await pollOnce(broadcast);
+    res.json({ status: 'ok' });
+  });
+
   app.all('*', (req, res) => handle(req, res));
 
   const server = http.createServer(app);
@@ -74,10 +79,6 @@ nextApp.prepare().then(() => {
     const setting = getSetting(activeId);
     if (setting) interval = setting.pollInterval || 0;
   }
-  app.post('/api/poll-now', async (_req, res) => {
-    await pollOnce(broadcast);
-    res.json({ status: 'ok' });
-  });
 
   startPolling(broadcast, interval);
 
