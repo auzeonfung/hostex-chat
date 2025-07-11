@@ -2,6 +2,7 @@
 import '@/styles/globals.css';
 import { ReactNode, useEffect, useState } from 'react';
 import { useTheme, type Theme } from '@/lib/useTheme';
+import { Toaster } from '@/components/ui/sonner'
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>('system')
