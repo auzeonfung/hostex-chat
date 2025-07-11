@@ -58,6 +58,25 @@ export default function ChatApp() {
   const [sortDesc, setSortDesc] = useState(true)
   const [showUnreadOnly, setShowUnreadOnly] = useState(false)
   const [isLoadingReadState, setIsLoadingReadState] = useState(true)
+
+  // load persisted filter settings
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('chatFilters')
+      if (saved) {
+        const f = JSON.parse(saved)
+        if (typeof f.showUnreadOnly === 'boolean') setShowUnreadOnly(f.showUnreadOnly)
+        if (typeof f.sortDesc === 'boolean') setSortDesc(f.sortDesc)
+      }
+    } catch {}
+  }, [])
+
+  // persist filter settings
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('chatFilters', JSON.stringify({ showUnreadOnly, sortDesc }))
+    } catch {}
+  }, [showUnreadOnly, sortDesc])
   const readRef = useRef(readState)
   const updateServerRead = useCallback(async (id: string, val: boolean) => {
     try {
@@ -439,7 +458,6 @@ export default function ChatApp() {
                     key={conv.id}
                     conv={conv}
                     selected={selectedId === conv.id}
-                    hasUpdate={updates[conv.id]}
                     unread={
                       readState[conv.id] !== undefined
                         ? !readState[conv.id]

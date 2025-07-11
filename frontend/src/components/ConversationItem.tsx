@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils'
 interface Props {
   conv: any;
   selected?: boolean;
-  hasUpdate?: boolean;
   unread?: boolean;
   onClick: () => void;
 }
@@ -66,23 +65,14 @@ function relativeTime(ts?: string) {
   return `${d}d ago`
 }
 
-function needsReply(conv: any) {
-  const last = getLastMessage(conv)
-  return last && last.sender_role !== 'host'
-}
 
-export default function ConversationItem({ conv, selected, hasUpdate, unread, onClick }: Props) {
+export default function ConversationItem({ conv, selected, unread, onClick }: Props) {
   return (
     <li>
       <Button
         className={cn(
           'w-full text-left h-auto border',
-          unread &&
-            cn(
-              'bg-blue-50 dark:bg-blue-900',
-              !hasUpdate && 'border-blue-500 dark:border-blue-700'
-            ),
-          hasUpdate && 'border-blue-800',
+          unread && 'bg-blue-50 dark:bg-blue-900 border-blue-500 dark:border-blue-700',
           selected && 'bg-muted'
         )}
         onClick={onClick}
@@ -113,11 +103,8 @@ export default function ConversationItem({ conv, selected, hasUpdate, unread, on
                 getLastMessage(conv)?.createdAt
               )}
             </div>
-            {(hasUpdate || unread) && (
+            {unread && (
               <span className="ml-2 mt-1 inline-block h-2 w-2 rounded-full bg-blue-500" />
-            )}
-            {needsReply(conv) && (
-              <span className="ml-1 mt-1 inline-block h-2 w-2 rounded-full bg-red-500" title="Reply needed" />
             )}
           </div>
         </div>
