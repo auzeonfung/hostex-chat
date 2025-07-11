@@ -77,7 +77,11 @@ export default function ConversationItem({ conv, selected, hasUpdate, unread, on
       <Button
         className={cn(
           'w-full text-left h-auto border',
-          unread && cn('bg-blue-50', !hasUpdate && 'border-blue-500'),
+          unread &&
+            cn(
+              'bg-blue-50 dark:bg-blue-900',
+              !hasUpdate && 'border-blue-500 dark:border-blue-700'
+            ),
           hasUpdate && 'border-blue-800',
           selected && 'bg-muted'
         )}
