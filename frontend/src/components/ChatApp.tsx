@@ -52,13 +52,26 @@ export default function ChatApp() {
   const [logs, setLogs] = useState<any[]>([])
   const [loadingLogs, setLoadingLogs] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
-  const [updates, setUpdates] = useState<Record<string, boolean>>({})
   const [readState, setReadState] = useState<Record<string, boolean>>({})
   const [config, setConfig] = useState<any>(null)
   const [sortDesc, setSortDesc] = useState(true)
   const [showUnreadOnly, setShowUnreadOnly] = useState(false)
   const [isLoadingReadState, setIsLoadingReadState] = useState(true)
   const readRef = useRef(readState)
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('chatFilters')
+      if (stored) {
+        const { sortDesc: sd, showUnreadOnly: su } = JSON.parse(stored)
+        if (typeof sd === 'boolean') setSortDesc(sd)
+        if (typeof su === 'boolean') setShowUnreadOnly(su)
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    sessionStorage.setItem('chatFilters', JSON.stringify({ sortDesc, showUnreadOnly }))
+  }, [sortDesc, showUnreadOnly])
   const updateServerRead = useCallback(async (id: string, val: boolean) => {
     try {
       await fetch(`${backend}/api/read-state`, {
@@ -79,10 +92,6 @@ export default function ChatApp() {
   useEffect(() => {
     readRef.current = readState
   }, [readState])
-  const updatesRef = useRef(updates)
-  useEffect(() => {
-    updatesRef.current = updates
-  }, [updates])
 
   // readState is initialized from the server so that refreshing the page keeps
   // read/unread status in sync across devices. We delay rendering until the
@@ -128,8 +137,8 @@ export default function ChatApp() {
   }, [config])
 
   // readState is initialized from the server response when loading
-  // conversations. Local updates are kept in memory and persisted via
-  // `/api/read-state` so the state is shared across devices.
+  // conversations. Local changes are persisted via `/api/read-state` so
+  // the state is shared across devices.
 
   useEffect(() => {
     async function load() {
@@ -152,7 +161,6 @@ export default function ChatApp() {
         setConversations((prev) => {
           const oldMap = Object.fromEntries(prev.map((c) => [c.id, c]))
           const newReads = { ...readRef.current }
-          const newUpdates = { ...updatesRef.current }
           const arr = Array.isArray(list) ? list : []
           arr.forEach((conv: any) => {
             if (typeof conv.isRead === 'boolean') {
@@ -161,12 +169,9 @@ export default function ChatApp() {
             const old = oldMap[conv.id]
             const newLast = (conv.last_message || conv.lastMessage || {}).created_at
             const oldLast = old ? (old.last_message || old.lastMessage || {}).created_at : undefined
-            if (!old) {
-              newUpdates[conv.id] = true
-            } else if (newLast && oldLast && new Date(newLast).getTime() > new Date(oldLast).getTime()) {
+            if (old && newLast && oldLast && new Date(newLast).getTime() > new Date(oldLast).getTime()) {
               if (conv.id !== selectedId) {
                 newReads[conv.id] = false
-                newUpdates[conv.id] = true
               }
             }
           })
@@ -176,7 +181,6 @@ export default function ChatApp() {
             return tb - ta
           })
           setReadState(newReads)
-          setUpdates(newUpdates)
           return arr
         })
       } catch (err: any) {
@@ -325,7 +329,6 @@ export default function ChatApp() {
           updateServerRead(id, true)
           console.log('WS update for conversation', id, data)
         } else {
-          setUpdates((u) => ({ ...u, [id]: true }))
           updateReadState(id, false)
           updateServerRead(id, false)
         }
@@ -439,7 +442,6 @@ export default function ChatApp() {
                     key={conv.id}
                     conv={conv}
                     selected={selectedId === conv.id}
-                    hasUpdate={updates[conv.id]}
                     unread={
                       readState[conv.id] !== undefined
                         ? !readState[conv.id]
@@ -450,10 +452,6 @@ export default function ChatApp() {
                       setSelectedId(conv.id)
                       updateReadState(conv.id, true)
                       updateServerRead(conv.id, true)
-                      setUpdates((u) => {
-                        const { [conv.id]: _removed, ...rest } = u
-                        return rest
-                      })
                     }}
                   />
                 ))}
