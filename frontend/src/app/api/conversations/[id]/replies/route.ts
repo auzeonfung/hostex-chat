@@ -10,7 +10,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { messages, model = 'gpt-3.5-turbo', apiKey } = await req.json();
+  const { messages, model = 'gpt-3.5-turbo', apiKey, endpoint } = await req.json();
   const key = apiKey || process.env.OPENAI_API_KEY;
   if (!key) {
     return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
@@ -18,7 +18,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   await addOpenAILog({ conversationId: params.id, payload: { model, messages } });
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const base = (endpoint || 'https://api.openai.com/v1').replace(/\/$/, '');
+  const res = await fetch(`${base}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

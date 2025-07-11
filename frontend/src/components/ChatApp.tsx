@@ -210,6 +210,7 @@ export default function ChatApp() {
     async (msgs: { sender_role?: string; content: string }[]) => {
       const settings = config?.data || {}
       const apiKey = settings.apiKey
+      const endpoint = settings.endpoint || 'https://api.openai.com/v1'
       const model = settings.model || 'gpt-3.5-turbo'
       const prompt = settings.prompt
       const payload = msgs.map((m) => ({
@@ -231,7 +232,7 @@ export default function ChatApp() {
         const res = await fetch(`/api/conversations/${selectedId}/replies`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: payload, model, apiKey }),
+          body: JSON.stringify({ messages: payload, model, apiKey, endpoint }),
         })
         const data = await safeJSON(res)
         if (!res.ok || data.error) {

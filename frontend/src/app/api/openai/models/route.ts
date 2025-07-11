@@ -4,11 +4,12 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
-  const { apiKey } = await req.json();
+  const { apiKey, endpoint } = await req.json();
   if (!apiKey) {
     return NextResponse.json({ error: 'apiKey required' }, { status: 400 });
   }
-  const res = await fetch('https://api.openai.com/v1/models', {
+  const base = (endpoint || 'https://api.openai.com/v1').replace(/\/$/, '');
+  const res = await fetch(`${base}/models`, {
     headers: {
       Authorization: `Bearer ${apiKey}`,
     },
