@@ -89,21 +89,21 @@ export default function ConversationItem({ conv, selected, hasUpdate, unread, on
           <div className="flex-1 pr-2 overflow-hidden">
             <div className={`truncate ${unread ? 'font-semibold' : 'font-medium'}`}>{getCustomerName(conv)}</div>
             {getPropertyTitle(conv) && (
-              <div className="text-xs text-gray-500 truncate">
+              <div className="text-xs text-muted-foreground dark:text-gray-400 truncate">
                 {getPropertyTitle(conv)}
               </div>
             )}
             {(getStayDates(conv) || getChannel(conv)) && (
-              <div className="text-xs text-gray-500 truncate">
+              <div className="text-xs text-muted-foreground dark:text-gray-400 truncate">
                 {getStayDates(conv)}{getChannel(conv) ? ` • ${getChannel(conv)}` : ''}
               </div>
             )}
-            <div className="text-xs text-gray-500 truncate">
+            <div className="text-xs text-muted-foreground dark:text-gray-400 truncate">
               {preview(getLastMessage(conv)?.content)}
             </div>
           </div>
           <div className="text-right pl-2">
-            <div className="text-xs text-gray-500 whitespace-nowrap">
+            <div className="text-xs text-muted-foreground dark:text-gray-400 whitespace-nowrap">
               {relativeTime(
                 getLastMessage(conv)?.created_at ||
                 getLastMessage(conv)?.createdAt
