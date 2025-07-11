@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useTheme } from "@/lib/useTheme";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,17 +132,7 @@ export default function SettingsPage() {
     await load()
   }
 
-  function applyTheme(val: string) {
-    if (val === "dark" || (val === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
-  }
-
-  useEffect(() => {
-    applyTheme(theme)
-  }, [theme])
+  useTheme(theme)
 
   return (
     <main className="p-4 space-y-4 max-w-2xl mx-auto">

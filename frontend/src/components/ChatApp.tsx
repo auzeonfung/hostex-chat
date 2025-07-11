@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { useTheme } from '@/lib/useTheme'
 import { useRouter, useParams } from 'next/navigation'
 import Header from './Header'
 import ConversationItem from './ConversationItem'
@@ -118,14 +119,7 @@ export default function ChatApp() {
     }
   }, [])
 
-  useEffect(() => {
-    const theme = config?.data?.theme || 'system'
-    if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [config])
+  useTheme(config?.data?.theme || 'system')
 
   useEffect(() => {
     if (config && config.pollInterval === 0 && config.data?.pollOnRefresh) {
