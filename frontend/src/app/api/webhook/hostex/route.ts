@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { addWebhookEvent, setReadState } from '@/lib/db';
-import { broadcast } from '@/lib/events';
+import { broadcast } from '../../../../../../backend/events.js';
 import { broadcastReadState } from '@/lib/readStateEvents';
 
 export const dynamic = 'force-dynamic';

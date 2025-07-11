@@ -240,7 +240,7 @@ export default function ChatApp() {
         setGenerating(false)
       }
     },
-    [selectedId]
+    [selectedId, config]
   )
 
   const fetchDetail = useCallback(

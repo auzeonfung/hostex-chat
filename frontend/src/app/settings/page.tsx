@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -103,26 +104,35 @@ export default function SettingsPage() {
       interval = parseInt(pollValue) || 0
       payload["pollOnRefresh"] = false
     }
-    if (selected) {
-      await fetch(`/api/settings/${selected}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, data: payload, pollInterval: interval }),
-      })
-      localStorage.setItem("activeSettingId", selected)
-    } else {
-      const res = await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name || "Default", data: payload, pollInterval: interval }),
-      })
-      const data = await res.json()
-      const newId = data.setting.id
-      setSelected(newId)
-      localStorage.setItem("activeSettingId", newId)
+    try {
+      let res: Response
+      if (selected) {
+        res = await fetch(`/api/settings/${selected}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, data: payload, pollInterval: interval }),
+        })
+        localStorage.setItem("activeSettingId", selected)
+      } else {
+        res = await fetch("/api/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name || "Default", data: payload, pollInterval: interval }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const newId = data.setting.id
+          setSelected(newId)
+          localStorage.setItem("activeSettingId", newId)
+        }
+      }
+      if (!res.ok) throw new Error("Failed")
+      await load()
+      toast.success("Saved")
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to save")
     }
-    await load()
-    alert("Saved")
   }
 
   async function remove() {
