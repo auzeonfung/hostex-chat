@@ -30,6 +30,7 @@ export default function SettingsPage() {
 
   const [name, setName] = useState("")
   const [apiKey, setApiKey] = useState("")
+  const [endpoint, setEndpoint] = useState("https://api.openai.com/v1")
   const [model, setModel] = useState("gpt-3.5-turbo")
   const [prompt, setPrompt] = useState("")
   const [theme, setTheme] = useState("system")
@@ -52,6 +53,7 @@ export default function SettingsPage() {
     if (!selected) {
       setName("");
       setApiKey("");
+      setEndpoint("https://api.openai.com/v1");
       setModel("gpt-3.5-turbo");
       setPrompt("");
       setTheme("system");
@@ -63,6 +65,7 @@ export default function SettingsPage() {
     if (s) {
       setName(s.name)
       setApiKey(s.data.apiKey || "")
+      setEndpoint(s.data.endpoint || "https://api.openai.com/v1")
       setModel(s.data.model || "gpt-3.5-turbo")
       setPrompt(s.data.prompt || "")
       setTheme(s.data.theme || "system")
@@ -81,15 +84,15 @@ export default function SettingsPage() {
     fetch("/api/openai/models", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apiKey }),
+      body: JSON.stringify({ apiKey, endpoint }),
     })
       .then((res) => res.json())
       .then((data) => Array.isArray(data.data) && setModels(data.data))
       .finally(() => setLoadingModels(false))
-  }, [apiKey])
+  }, [apiKey, endpoint])
 
   async function save() {
-    const payload = { apiKey, model, prompt, theme, autoReply }
+    const payload = { apiKey, model, prompt, theme, autoReply, endpoint }
     let interval = 0
     if (pollValue === "refresh") {
       payload["pollOnRefresh"] = true
@@ -170,6 +173,10 @@ export default function SettingsPage() {
           <label className="block">
             <span className="font-medium">OpenAI API Key</span>
             <Input type="password" className="mt-1 w-full" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="font-medium">AI Endpoint</span>
+            <Input className="mt-1 w-full" value={endpoint} onChange={(e) => setEndpoint(e.target.value)} />
           </label>
           <label className="block space-y-1">
             <span className="font-medium">Model</span>
