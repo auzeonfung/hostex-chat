@@ -2,7 +2,7 @@ import http from 'http'
 import crypto from 'crypto'
 import { addWebhookEvent, setReadState } from '../frontend/src/lib/db'
 import { broadcastReadState } from '../frontend/src/lib/readStateEvents'
-import { broadcast } from '../frontend/src/lib/events'
+import { broadcast } from '../backend/events.js'
 
 const PORT = parseInt(process.env.WEBHOOK_PORT || '3100', 10)
 const TOKEN = process.env.HOSTEX_API_TOKEN
