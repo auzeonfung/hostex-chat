@@ -147,7 +147,7 @@ export default function SettingsPage() {
     <main className="p-4 space-y-4 max-w-2xl mx-auto">
       <div className="flex justify-between border-b pb-2 mb-2">
         <h1 className="text-2xl font-bold">Settings</h1>
-        <Link href="/" className="text-blue-600 underline">Back</Link>
+        <Link href="/" className="text-primary underline">Back</Link>
       </div>
       <div className="flex space-x-4">
         <div className="w-48 space-y-2">
