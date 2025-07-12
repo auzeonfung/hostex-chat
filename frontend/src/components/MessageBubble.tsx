@@ -1,15 +1,6 @@
 'use client';
 
-export interface Message {
-  sender_role?: string;
-  content: string;
-  created_at?: string;
-  display_type?: string;
-  attachment?: {
-    fullback_url?: string;
-    [key: string]: any;
-  } | null;
-}
+import type { Message } from '../types'
 
 import { useCallback, useState } from 'react'
 import { Button } from './ui/button'

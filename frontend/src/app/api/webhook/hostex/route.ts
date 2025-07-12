@@ -28,22 +28,27 @@ export async function POST(req: NextRequest) {
   //   return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   // }
 
-  let payload: any;
+  let payload: unknown;
   try {
     payload = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const type = payload.type || payload.event;
+  const obj = payload as Record<string, unknown>;
+  const type = (obj['type'] ?? obj['event']) as string | undefined;
   if (type === 'message.created' || type === 'message_created') {
+    const dataObj = (obj['data'] || {}) as Record<string, unknown>;
     const conversationId =
-      payload.conversation_id || payload.data?.conversation_id || payload.data?.conversationId;
+      (obj['conversation_id'] as string | undefined) ||
+      (dataObj['conversation_id'] as string | undefined) ||
+      (dataObj['conversationId'] as string | undefined);
     if (conversationId) {
       await setReadState(conversationId, false);
       broadcastReadState({ conversationId, read: false });
-      const event = await addWebhookEvent({ type, conversationId, payload });
-      broadcast({ conversationId, message: event.payload?.data || event.payload });
+      const event = await addWebhookEvent({ type, conversationId, payload: obj });
+      const payloadData = (event.payload as Record<string, unknown>)['data'];
+      broadcast({ conversationId, message: payloadData || event.payload });
       console.log('Webhook event processed', { type, conversationId });
     }
   }
