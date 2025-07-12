@@ -6,7 +6,7 @@ const dbPath = path.join(process.cwd(), 'db.sqlite');
 // remove existing db file
 if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
 
-const db = require('./build/db.js');
+const db = require('./build/lib/db.js');
 
 test('add and list replies', async () => {
   const reply = await db.addReply({ conversationId: '1', text: 'hello', model: 'm' });

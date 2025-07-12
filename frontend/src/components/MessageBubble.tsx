@@ -4,7 +4,7 @@ import type { Message } from '../types'
 
 import { useCallback, useState } from 'react'
 import { Button } from './ui/button'
-import { Download, Clipboard } from 'lucide-react'
+import { Download, Clipboard, Loader2, AlertCircle } from 'lucide-react'
 
 export default function MessageBubble({ message }: { message: Message }) {
   const isHost = message.sender_role === 'host'
@@ -30,11 +30,19 @@ export default function MessageBubble({ message }: { message: Message }) {
     }
   }, [])
 
+  const statusIcon = message.error ? (
+    <AlertCircle className="w-4 h-4 text-red-500" />
+  ) : message.pending ? (
+    <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+  ) : null
+
   return (
     <div className={`flex ${isHost ? 'justify-end' : 'justify-start'}`}>
-      <div
-        className={`max-w-md rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${isHost ? 'bg-blue-500 text-white dark:bg-blue-600' : 'bg-gray-200 dark:bg-gray-700 dark:text-gray-100'}`}
-      >
+      <div className="flex items-end gap-1">
+        {!isHost && statusIcon}
+        <div
+          className={`max-w-md rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${isHost ? 'bg-blue-500 text-white dark:bg-blue-600' : 'bg-gray-200 dark:bg-gray-700 dark:text-gray-100'} ${message.error ? 'border border-red-500' : ''}`}
+        >
         {message.display_type === 'FileAttachment' && message.attachment?.fullback_url ? (
           <div className="space-y-1">
             <img src={message.attachment.fullback_url} alt="attachment" className="max-w-full h-auto rounded" />
@@ -85,6 +93,8 @@ export default function MessageBubble({ message }: { message: Message }) {
             {new Date(message.created_at).toLocaleString()}
           </div>
         )}
+        </div>
+        {isHost && statusIcon}
       </div>
     </div>
   )

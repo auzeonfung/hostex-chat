@@ -45,6 +45,7 @@ export default function ChatApp() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const [updates, setUpdates] = useState<Record<string, boolean>>({})
   const [readState, setReadState] = useState<Record<string, boolean>>({})
+  const [pendingMap, setPendingMap] = useState<Record<string, { id: string; content: string; created_at: string }[]>>({})
   const [config, setConfig] = useState<Setting | null>(null)
   const [sortDesc, setSortDesc] = useState(true)
   const [showUnreadOnly, setShowUnreadOnly] = useState(false)
@@ -69,6 +70,7 @@ export default function ChatApp() {
     } catch {}
   }, [showUnreadOnly, sortDesc])
   const readRef = useRef(readState)
+  const pendingRef = useRef(pendingMap)
   const updateServerRead = useCallback(async (id: string, val: boolean) => {
     try {
       await fetch(`${backend}/api/read-state`, {
@@ -89,6 +91,9 @@ export default function ChatApp() {
   useEffect(() => {
     readRef.current = readState
   }, [readState])
+  useEffect(() => {
+    pendingRef.current = pendingMap
+  }, [pendingMap])
   const updatesRef = useRef(updates)
   useEffect(() => {
     updatesRef.current = updates
@@ -141,65 +146,65 @@ export default function ChatApp() {
   // conversations. Local updates are kept in memory and persisted via
   // `/api/read-state` so the state is shared across devices.
 
-  useEffect(() => {
-    async function load() {
-      setLoadingList(true)
-      try {
-        const res = await fetch(`${backend}/api/conversations`)
-        const data = await safeJSON(res)
-        if (!res.ok || data.error) {
-          setError(data.error || 'Failed to load')
-          return
-        }
-        const list =
-          data.conversations ||
-          data.items ||
-          data.data?.conversations ||
-          data.data?.items ||
-          data.data ||
-          data
-
-        setConversations((prev) => {
-          const oldMap = Object.fromEntries(prev.map((c) => [c.id, c]))
-          const newReads = { ...readRef.current }
-          const newUpdates = { ...updatesRef.current }
-          const arr = Array.isArray(list) ? list : []
-          arr.forEach((conv: Conversation) => {
-            if (typeof conv.isRead === 'boolean') {
-              newReads[conv.id] = conv.isRead
-            }
-            const old = oldMap[conv.id]
-            const newLast = (conv.last_message || conv.lastMessage || {}).created_at
-            const oldLast = old ? (old.last_message || old.lastMessage || {}).created_at : undefined
-            if (!old) {
-              newUpdates[conv.id] = true
-            } else if (newLast && oldLast && new Date(newLast).getTime() > new Date(oldLast).getTime()) {
-              if (conv.id !== selectedId) {
-                newReads[conv.id] = false
-                newUpdates[conv.id] = true
-              }
-            }
-          })
-          arr.sort((a: Conversation, b: Conversation) => {
-            const ta = new Date((a.last_message || a.lastMessage || {}).created_at || 0).getTime()
-            const tb = new Date((b.last_message || b.lastMessage || {}).created_at || 0).getTime()
-            return tb - ta
-          })
-          setReadState(newReads)
-          setUpdates(newUpdates)
-          return arr
-        })
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
-      } finally {
-        setLoadingList(false)
+  const loadConversations = useCallback(async () => {
+    setLoadingList(true)
+    try {
+      const res = await fetch(`${backend}/api/conversations`)
+      const data = await safeJSON(res)
+      if (!res.ok || data.error) {
+        setError(data.error || 'Failed to load')
+        return
       }
-    }
+      const list =
+        data.conversations ||
+        data.items ||
+        data.data?.conversations ||
+        data.data?.items ||
+        data.data ||
+        data
 
-    load()
-    const id = setInterval(load, 30000)
-    return () => clearInterval(id)
+      setConversations((prev) => {
+        const oldMap = Object.fromEntries(prev.map((c) => [c.id, c]))
+        const newReads = { ...readRef.current }
+        const newUpdates = { ...updatesRef.current }
+        const arr = Array.isArray(list) ? list : []
+        arr.forEach((conv: Conversation) => {
+          if (typeof conv.isRead === 'boolean') {
+            newReads[conv.id] = conv.isRead
+          }
+          const old = oldMap[conv.id]
+          const newLast = (conv.last_message || conv.lastMessage || {}).created_at
+          const oldLast = old ? (old.last_message || old.lastMessage || {}).created_at : undefined
+          if (!old) {
+            newUpdates[conv.id] = true
+          } else if (newLast && oldLast && new Date(newLast).getTime() > new Date(oldLast).getTime()) {
+            if (conv.id !== selectedId) {
+              newReads[conv.id] = false
+              newUpdates[conv.id] = true
+            }
+          }
+        })
+        arr.sort((a: Conversation, b: Conversation) => {
+          const ta = new Date((a.last_message || a.lastMessage || {}).created_at || 0).getTime()
+          const tb = new Date((b.last_message || b.lastMessage || {}).created_at || 0).getTime()
+          return tb - ta
+        })
+        setReadState(newReads)
+        setUpdates(newUpdates)
+        return arr
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoadingList(false)
+    }
   }, [selectedId])
+
+  useEffect(() => {
+    loadConversations()
+    const id = setInterval(loadConversations, 30000)
+    return () => clearInterval(id)
+  }, [loadConversations])
 
   const orderMessages = useCallback((messages?: Message[]) => {
     if (!Array.isArray(messages)) return messages
@@ -209,6 +214,38 @@ export default function ChatApp() {
       return ta - tb
     })
   }, [])
+
+  const mergePending = useCallback(
+    (id: string, msgs: Message[] = []) => {
+      const pend = pendingRef.current[id] || []
+      const serverMsgs = [...msgs]
+      const remaining: typeof pend = []
+      for (const p of pend) {
+        const match = serverMsgs.find(
+          (m) =>
+            m.sender_role === 'host' &&
+            m.content === p.content &&
+            new Date(m.created_at || 0).getTime() >= new Date(p.created_at).getTime()
+        )
+        if (!match) {
+          remaining.push(p)
+          serverMsgs.push({
+            id: p.id,
+            local_id: p.id,
+            sender_role: 'host',
+            content: p.content,
+            created_at: p.created_at,
+            pending: true,
+          })
+        }
+      }
+      if (remaining.length !== pend.length) {
+        setPendingMap((prev) => ({ ...prev, [id]: remaining }))
+      }
+      return orderMessages(serverMsgs)
+    },
+    [orderMessages]
+  )
 
   const generateReply = useCallback(
     async (msgs: { sender_role?: string; content: string }[]) => {
@@ -279,6 +316,7 @@ export default function ChatApp() {
           d.check_out_date || activity?.check_out_date || null
 
         const ordered = orderMessages(d.messages)
+        const merged = mergePending(id, ordered || [])
 
         setDetail({
           ...d,
@@ -286,7 +324,18 @@ export default function ChatApp() {
           customer: d.customer || d.guest,
           check_in_date: checkIn,
           check_out_date: checkOut,
-          messages: ordered,
+          messages: merged,
+        })
+
+        const last = merged && merged[merged.length - 1]
+        setConversations((prev) => {
+          const others = prev.filter((c) => c.id !== id)
+          const conv = { id, ...d, last_message: last }
+          return [conv, ...others].sort((a, b) => {
+            const ta = new Date((a.last_message || a.lastMessage || {}).created_at || 0).getTime()
+            const tb = new Date((b.last_message || b.lastMessage || {}).created_at || 0).getTime()
+            return tb - ta
+          })
         })
 
         updateReadState(id, true)
@@ -315,7 +364,7 @@ export default function ChatApp() {
     } else {
       setDetail(null)
     }
-  }, [selectedId, fetchDetail])
+  }, [selectedId, fetchDetail, loadConversations])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -350,6 +399,7 @@ export default function ChatApp() {
           setUpdates((u) => ({ ...u, [id]: true }))
           updateReadState(id, false)
           updateServerRead(id, false)
+          loadConversations()
         }
       } catch {
         // ignore JSON parse errors
@@ -389,6 +439,36 @@ export default function ChatApp() {
   async function sendMessage() {
     if (!selectedId || !message.trim()) return
     setSending(true)
+    const localId = 'local-' + Math.random().toString(36).slice(2)
+    const ts = new Date().toISOString()
+    const pendingMsg: Message = {
+      id: localId,
+      local_id: localId,
+      sender_role: 'host',
+      content: message,
+      created_at: ts,
+      pending: true,
+    }
+    setPendingMap((prev) => ({
+      ...prev,
+      [selectedId]: [...(prev[selectedId] || []), { id: localId, content: message, created_at: ts }],
+    }))
+    setDetail((d) =>
+      d ? { ...d, messages: mergePending(selectedId, [...(d.messages || []), pendingMsg]) } : d
+    )
+    setConversations((prev) => {
+      const others = prev.filter((c) => c.id !== selectedId)
+      const conv = prev.find((c) => c.id === selectedId) || { id: selectedId } as any
+      const updated = { ...conv, last_message: pendingMsg }
+      return [updated, ...others].sort((a, b) => {
+        const ta = new Date((a.last_message || a.lastMessage || {}).created_at || 0).getTime()
+        const tb = new Date((b.last_message || b.lastMessage || {}).created_at || 0).getTime()
+        return tb - ta
+      })
+    })
+    setMessage('')
+    updateReadState(selectedId, true)
+    updateServerRead(selectedId, true)
     try {
       const res = await fetch(`/api/conversations/${selectedId}/send`, {
         method: 'POST',
@@ -398,13 +478,35 @@ export default function ChatApp() {
       const data = await safeJSON(res)
       if (!res.ok || data.error) {
         setError(data.error || 'Failed to send')
-      } else {
-        setMessage('')
-        await fetchDetail(selectedId)
-        console.log('Message sent', { id: selectedId, content: message })
+        setDetail((d) => {
+          if (!d) return d
+          return {
+            ...d,
+            messages: (d.messages || []).map((m) =>
+              m.id === localId ? { ...m, pending: false, error: true } : m
+            ),
+          }
+        })
+        setPendingMap((prev) => ({
+          ...prev,
+          [selectedId]: (prev[selectedId] || []).filter((p) => p.id !== localId),
+        }))
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
+      setDetail((d) => {
+        if (!d) return d
+        return {
+          ...d,
+          messages: (d.messages || []).map((m) =>
+            m.id === localId ? { ...m, pending: false, error: true } : m
+          ),
+        }
+      })
+      setPendingMap((prev) => ({
+        ...prev,
+        [selectedId]: (prev[selectedId] || []).filter((p) => p.id !== localId),
+      }))
     } finally {
       setSending(false)
     }

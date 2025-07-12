@@ -14,6 +14,9 @@ export interface Message {
     fullback_url?: string;
     [key: string]: unknown;
   } | null;
+  local_id?: string;
+  pending?: boolean;
+  error?: boolean;
 }
 
 export interface Conversation {

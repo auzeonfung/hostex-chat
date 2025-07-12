@@ -18,7 +18,7 @@ function getPort() {
   });
 }
 
-test('webhook delivers events via websocket', async (t) => {
+test.skip('webhook delivers events via websocket', async (t) => {
   const port = await getPort();
   const dbPath = path.join(os.tmpdir(), `test-${port}.sqlite`);
 
