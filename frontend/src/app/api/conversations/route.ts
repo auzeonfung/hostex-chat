@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getReadState } from '@/lib/db';
+import type { Conversation } from '@/types';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -45,15 +46,15 @@ export async function GET() {
       data;
 
     if (Array.isArray(list)) {
-      const ids = list.map((c: any) => c.id).filter(Boolean);
+      const ids = list.map((c: Conversation) => c.id).filter(Boolean);
       const reads = await getReadState(ids);
-      list.forEach((c: any) => {
+      list.forEach((c: Conversation & { isRead?: boolean }) => {
         c.isRead = !!reads[c.id];
       });
     }
 
     return NextResponse.json(data);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }

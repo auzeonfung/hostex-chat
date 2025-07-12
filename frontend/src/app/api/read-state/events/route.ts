@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const writer = writable.getWriter()
   const encoder = new TextEncoder()
 
-  const send = (data: any) => {
+  const send = (data: Record<string, unknown>) => {
     writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
   }
 

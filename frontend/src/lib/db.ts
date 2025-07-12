@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import crypto from 'crypto';
+import type { SettingData } from '../types';
 
 export interface Reply {
   id: string;
@@ -14,14 +15,14 @@ export interface WebhookEvent {
   id: string;
   type: string;
   conversationId: string;
-  payload: any;
+  payload: Record<string, unknown>;
   receivedAt: string;
 }
 
 export interface OpenAILog {
   id: string;
   conversationId: string;
-  payload: any;
+  payload: Record<string, unknown>;
   createdAt: string;
 }
 
@@ -134,10 +135,10 @@ export async function listWebhookEvents(
      FROM webhook_events ${where} ORDER BY received_at`,
     conversationId ? [conversationId] : []
   );
-  return rows.map((r: any) => ({
-    ...r,
-    payload: JSON.parse(r.payload),
-  }));
+  return rows.map((r: Record<string, unknown>) => ({
+    ...(r as Record<string, unknown>),
+    payload: JSON.parse(r['payload'] as string),
+  })) as WebhookEvent[];
 }
 
 export async function addOpenAILog(
@@ -161,10 +162,10 @@ export async function listOpenAILogs(
      FROM openai_logs WHERE conversation_id=? ORDER BY created_at`,
     [conversationId]
   );
-  return rows.map((r: any) => ({
-    ...r,
-    payload: JSON.parse(r.payload),
-  }));
+  return rows.map((r: Record<string, unknown>) => ({
+    ...(r as Record<string, unknown>),
+    payload: JSON.parse(r['payload'] as string),
+  })) as OpenAILog[];
 }
 
 export async function setReadState(conversationId: string, isRead: boolean) {
@@ -209,7 +210,11 @@ export async function listSettings(): Promise<Setting[]> {
   const rows = await run(
     `SELECT id, name, data, poll_interval as pollInterval, created_at as createdAt, updated_at as updatedAt FROM settings`
   );
-  return rows.map((r: any) => ({ ...r, data: JSON.parse(r.data), pollInterval: r.pollInterval ?? 0 }));
+  return rows.map((r: Record<string, unknown>) => ({
+    ...(r as Record<string, unknown>),
+    data: JSON.parse(r['data'] as string),
+    pollInterval: (r as any).pollInterval ?? 0,
+  })) as Setting[];
 }
 
 export async function getSetting(id: string): Promise<Setting | undefined> {
@@ -218,10 +223,16 @@ export async function getSetting(id: string): Promise<Setting | undefined> {
     [id]
   );
   const r = rows[0];
-  return r ? { ...r, data: JSON.parse(r.data), pollInterval: r.pollInterval ?? 0 } : undefined;
+  return r
+    ? ({
+        ...(r as Record<string, unknown>),
+        data: JSON.parse(r['data'] as string),
+        pollInterval: (r as any).pollInterval ?? 0,
+      } as Setting)
+    : undefined;
 }
 
-export async function addSetting(name: string, data: any, pollInterval = 0): Promise<Setting> {
+export async function addSetting(name: string, data: SettingData, pollInterval = 0): Promise<Setting> {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   await run(
@@ -231,7 +242,7 @@ export async function addSetting(name: string, data: any, pollInterval = 0): Pro
   return { id, name, data, pollInterval, createdAt: now, updatedAt: now };
 }
 
-export async function updateSetting(id: string, name: string, data: any, pollInterval = 0) {
+export async function updateSetting(id: string, name: string, data: SettingData, pollInterval = 0) {
   const now = new Date().toISOString();
   await run(
     `UPDATE settings SET name=?, data=?, poll_interval=?, updated_at=? WHERE id=?`,

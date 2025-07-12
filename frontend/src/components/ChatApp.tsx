@@ -5,22 +5,13 @@ import { useTheme } from '@/lib/useTheme'
 import { useRouter, useParams } from 'next/navigation'
 import Header from './Header'
 import ConversationItem from './ConversationItem'
-import MessageBubble, { Message } from './MessageBubble'
+import MessageBubble from './MessageBubble'
+import type { Message, Conversation, ConversationDetail, OpenAILog, Setting } from '@/types'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { Separator } from './ui/separator'
 import { Sparkles, Send as SendIcon, FileText } from 'lucide-react'
 
-interface Conversation {
-  id: string
-  [key: string]: any
-}
-
-interface ConversationDetail {
-  id: string
-  messages?: (Message & { id?: string })[]
-  [key: string]: any
-}
 
 const backend = process.env.NEXT_PUBLIC_BACKEND_URL || ''
 
@@ -49,12 +40,12 @@ export default function ChatApp() {
   const [sending, setSending] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [showLogs, setShowLogs] = useState(false)
-  const [logs, setLogs] = useState<any[]>([])
+  const [logs, setLogs] = useState<OpenAILog[]>([])
   const [loadingLogs, setLoadingLogs] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const [updates, setUpdates] = useState<Record<string, boolean>>({})
   const [readState, setReadState] = useState<Record<string, boolean>>({})
-  const [config, setConfig] = useState<any>(null)
+  const [config, setConfig] = useState<Setting | null>(null)
   const [sortDesc, setSortDesc] = useState(true)
   const [showUnreadOnly, setShowUnreadOnly] = useState(false)
   const [isLoadingReadState, setIsLoadingReadState] = useState(true)
@@ -173,7 +164,7 @@ export default function ChatApp() {
           const newReads = { ...readRef.current }
           const newUpdates = { ...updatesRef.current }
           const arr = Array.isArray(list) ? list : []
-          arr.forEach((conv: any) => {
+          arr.forEach((conv: Conversation) => {
             if (typeof conv.isRead === 'boolean') {
               newReads[conv.id] = conv.isRead
             }
@@ -189,7 +180,7 @@ export default function ChatApp() {
               }
             }
           })
-          arr.sort((a: any, b: any) => {
+          arr.sort((a: Conversation, b: Conversation) => {
             const ta = new Date((a.last_message || a.lastMessage || {}).created_at || 0).getTime()
             const tb = new Date((b.last_message || b.lastMessage || {}).created_at || 0).getTime()
             return tb - ta
@@ -198,8 +189,8 @@ export default function ChatApp() {
           setUpdates(newUpdates)
           return arr
         })
-      } catch (err: any) {
-        setError(err.message)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err))
       } finally {
         setLoadingList(false)
       }
@@ -213,8 +204,8 @@ export default function ChatApp() {
   const orderMessages = useCallback((messages?: Message[]) => {
     if (!Array.isArray(messages)) return messages
     return [...messages].sort((a, b) => {
-      const ta = new Date((a as any).created_at ?? 0).getTime()
-      const tb = new Date((b as any).created_at ?? 0).getTime()
+      const ta = new Date((a as Message).created_at ?? 0).getTime()
+      const tb = new Date((b as Message).created_at ?? 0).getTime()
       return ta - tb
     })
   }, [])
@@ -253,8 +244,8 @@ export default function ChatApp() {
         } else {
           setMessage(data.reply.text)
         }
-      } catch (err: any) {
-        setError(err.message)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err))
       } finally {
         setGenerating(false)
       }
@@ -275,7 +266,10 @@ export default function ChatApp() {
         const d = data.data ?? data
 
         const activity = Array.isArray(d.activities)
-          ? d.activities.find((a: any) => a.property)
+          ? d.activities.find(
+              (a: { property?: unknown; check_in_date?: string; check_out_date?: string }) =>
+                !!a.property
+            )
           : null
 
         const property = d.property || activity?.property || null
@@ -306,8 +300,8 @@ export default function ChatApp() {
           messages: ordered?.length,
         })
       }
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoadingDetail(false)
     }
@@ -409,8 +403,8 @@ export default function ChatApp() {
         await fetchDetail(selectedId)
         console.log('Message sent', { id: selectedId, content: message })
       }
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setSending(false)
     }
@@ -445,7 +439,7 @@ export default function ChatApp() {
 
   const visibleConversations = conversations
     .filter((c) => !showUnreadOnly || !readState[c.id])
-    .sort((a: any, b: any) => {
+    .sort((a: Conversation, b: Conversation) => {
       const ta = new Date((a.last_message || a.lastMessage || {}).created_at || 0).getTime()
       const tb = new Date((b.last_message || b.lastMessage || {}).created_at || 0).getTime()
       return sortDesc ? tb - ta : ta - tb
@@ -524,7 +518,7 @@ export default function ChatApp() {
                   <div className="flex-1 overflow-y-auto p-4 space-y-2">
                     {detail.messages ? (
                       detail.messages.map((m, idx) => (
-                        <MessageBubble key={(m as any).id ?? idx} message={m} />
+                        <MessageBubble key={(m as { id?: string }).id ?? idx} message={m} />
                       ))
                     ) : (
                       <pre className="whitespace-pre-wrap text-sm">

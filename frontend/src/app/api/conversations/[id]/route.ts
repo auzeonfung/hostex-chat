@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { ConversationDetail } from '@/types';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -32,7 +33,7 @@ export async function GET(
 
     const data = await res.json();
     return NextResponse.json(data);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
