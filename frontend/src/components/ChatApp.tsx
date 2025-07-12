@@ -329,11 +329,20 @@ export default function ChatApp() {
 
   useEffect(() => {
     // start websocket server and connect
-    fetch(`${backend}/api/events`).catch(() => {})
-    const proto = backend.startsWith('https') ? 'wss' : backend.startsWith('http') ? 'ws' : window.location.protocol === 'https:' ? 'wss' : 'ws'
+    let ws: WebSocket | null = null
+    let delay = 1000
+    let stopped = false
+
+    const proto = backend.startsWith('https')
+      ? 'wss'
+      : backend.startsWith('http')
+      ? 'ws'
+      : window.location.protocol === 'https:'
+      ? 'wss'
+      : 'ws'
     const host = backend ? backend.replace(/^https?:\/\//, '') : window.location.host
-    const ws = new WebSocket(`${proto}://${host}/api/events`)
-    ws.onmessage = (e) => {
+
+    const handleMessage = (e: MessageEvent) => {
       try {
         const data = JSON.parse(e.data as string)
         const id = data.conversationId || data.conversation_id
@@ -352,8 +361,32 @@ export default function ChatApp() {
         // ignore JSON parse errors
       }
     }
+
+    const connect = () => {
+      if (stopped) return
+      fetch(`${backend}/api/events`).catch(() => {})
+      ws = new WebSocket(`${proto}://${host}/api/events`)
+      ws.onopen = () => {
+        delay = 1000
+      }
+      ws.onmessage = handleMessage
+      const reconnect = () => {
+        if (stopped) return
+        try {
+          ws?.close()
+        } catch {}
+        setTimeout(connect, delay)
+        delay = Math.min(delay * 2, 30000)
+      }
+      ws.onerror = reconnect
+      ws.onclose = reconnect
+    }
+
+    connect()
+
     return () => {
-      ws.close()
+      stopped = true
+      if (ws) ws.close()
     }
   }, [selectedId, fetchDetail])
 
